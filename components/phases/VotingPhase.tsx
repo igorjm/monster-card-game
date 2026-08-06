@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
+import { ROLES } from "@/lib/game/roles";
 import type { RoomView } from "@/lib/api/views";
+import { CardBack, RoleCard } from "@/components/RoleCard";
+import { AppShell } from "@/components/AppShell";
 
 export function VotingPhase({
   view,
@@ -18,6 +21,7 @@ export function VotingPhase({
 
   const voted = !!game.yourVote;
   const targets = view.players.filter((p) => p.id !== view.you.id);
+  const hunterRevealed = game.hunterRevealed;
 
   async function vote() {
     if (!selected) return;
@@ -37,7 +41,7 @@ export function VotingPhase({
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-5 px-5 py-8">
+    <AppShell className="gap-5">
       <header className="text-center">
         <h1 className="font-title text-sm text-blood-bright">HORA DA FORCA</h1>
         <p className="mt-2 text-parchment-dim">
@@ -50,26 +54,38 @@ export function VotingPhase({
         </p>
       </header>
 
-      <div className="grid grid-cols-2 gap-3">
+      {hunterRevealed && (
+        <section className="panel-pixel flex flex-col items-center gap-2 rounded-lg border-ember p-4">
+          <p className="font-title text-xs text-ember">O CAÇADOR REVELOU</p>
+          <RoleCard role={hunterRevealed} size="sm" flip />
+          <p className="text-center text-parchment">
+            A carta escondida era{" "}
+            <span className="text-ember">{ROLES[hunterRevealed].name}</span>
+          </p>
+        </section>
+      )}
+
+      <div className="scroll-cards flex justify-start gap-3 overflow-x-auto pb-1 sm:flex-wrap sm:justify-center">
         {targets.map((p) => {
           const isSelected = selected === p.id || game.yourVote === p.id;
+          const dimmed = voted && game.yourVote !== p.id;
           return (
-            <button
+            <div
               key={p.id}
-              disabled={voted || busy}
-              onClick={() => setSelected(p.id)}
-              className={`panel-pixel rounded-lg p-4 text-center transition-transform active:scale-95 ${
-                isSelected ? "border-blood-bright text-blood-bright" : "text-parchment"
-              } ${voted && game.yourVote !== p.id ? "opacity-40" : ""}`}
+              className={`relative ${dimmed ? "opacity-40" : ""}`}
             >
-              <span className="font-title block text-2xl">
-                {p.hasVoted ? "☠" : "?"}
-              </span>
-              <span className="mt-2 block truncate">{p.nickname}</span>
+              <CardBack
+                size="md"
+                label={p.nickname}
+                selected={isSelected}
+                onClick={voted || busy ? undefined : () => setSelected(p.id)}
+              />
               {p.hasVoted && (
-                <span className="block text-sm text-parchment-dim">votou</span>
+                <span className="font-title absolute -right-1 -top-1 rounded-full border-2 border-grave bg-blood px-1.5 text-[0.45rem] text-parchment">
+                  VOTOU
+                </span>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
@@ -89,6 +105,6 @@ export function VotingPhase({
       )}
 
       {error && <p className="shake text-center text-blood-bright">{error}</p>}
-    </main>
+    </AppShell>
   );
 }

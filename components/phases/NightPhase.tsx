@@ -3,13 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
 import { useNow } from "@/lib/client/useNow";
-import { checkNightAudio, speak, stopSpeaking } from "@/lib/client/narrator";
-import { NIGHT_TOTAL_SECONDS, segmentAt } from "@/lib/game/timeline";
+import {
+  checkNightAudio,
+  displayCaption,
+  nightAudioSrc,
+  speak,
+  stopSpeaking,
+} from "@/lib/client/narrator";
+import {
+  NIGHT_TOTAL_SECONDS,
+  segmentAt,
+  subtitleAt,
+} from "@/lib/game/timeline";
 import { ROLES } from "@/lib/game/roles";
 import type { NightAction, PrivateInfo, Role, SwapTarget } from "@/lib/game/types";
 import type { RoomView } from "@/lib/api/views";
 import { CardBack, RoleCard } from "@/components/RoleCard";
 import { PeekCard } from "@/components/PeekCard";
+import { AppShell } from "@/components/AppShell";
 
 export function NightPhase({
   view,
@@ -24,12 +35,14 @@ export function NightPhase({
   const now = useNow(clockOffsetMs);
   const elapsed = (now - new Date(game.nightStartedAt).getTime()) / 1000;
   const segment = segmentAt(elapsed);
+  const subtitle = subtitleAt(elapsed);
 
   const [soundOn, setSoundOn] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [hasAudioFile, setHasAudioFile] = useState(false);
   const spokenKeyRef = useRef<string | null>(null);
   const advanceSentRef = useRef(false);
+  const wolfPeekSentRef = useRef(false);
 
   useEffect(() => {
     void checkNightAudio().then(setHasAudioFile);
@@ -38,6 +51,33 @@ export function NightPhase({
       audioRef.current?.pause();
     };
   }, []);
+
+  // Werewolves peek the remaining center cards once during their window.
+  useEffect(() => {
+    if (game.yourRole !== "lobisomem") return;
+    if (segment?.key !== "lobisomem") return;
+    if (game.hasActed || wolfPeekSentRef.current) return;
+    wolfPeekSentRef.current = true;
+    void apiPost(`/api/rooms/${view.code}/action`, {
+      token: getPlayerToken(),
+      action: { type: "lobisomem_peek" },
+    }).then(() => refresh());
+  }, [
+    game.yourRole,
+    game.hasActed,
+    segment?.key,
+    view.code,
+    refresh,
+  ]);
+
+  // Keep the audio playhead aligned with the shared night clock.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!soundOn || !hasAudioFile || !audio || audio.paused) return;
+    if (Math.abs(audio.currentTime - elapsed) > 0.75) {
+      audio.currentTime = Math.max(0, Math.min(elapsed, NIGHT_TOTAL_SECONDS));
+    }
+  }, [elapsed, soundOn, hasAudioFile]);
 
   // Narrate each segment once (TTS fallback when no audio file).
   useEffect(() => {
@@ -60,7 +100,8 @@ export function NightPhase({
   async function enableSound() {
     setSoundOn(true);
     if (hasAudioFile) {
-      const audio = new Audio("/audio/noite.mp3");
+      const audio = new Audio(nightAudioSrc());
+      audio.preload = "auto";
       audio.currentTime = Math.max(0, elapsed);
       audioRef.current = audio;
       try {
@@ -85,9 +126,10 @@ export function NightPhase({
         : null;
 
   const progress = Math.min(1, elapsed / NIGHT_TOTAL_SECONDS);
+  const caption = displayCaption(subtitle, segment?.narration);
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-5 py-6">
+    <AppShell className="gap-4">
       <div className="h-2 w-full overflow-hidden rounded-full border-2 border-grave bg-grave">
         <div
           className="h-full bg-ember transition-[width] duration-500"
@@ -97,9 +139,17 @@ export function NightPhase({
 
       <header className="text-center">
         <h1 className="font-title flicker text-sm text-ember">A NOITE CAIU</h1>
-        <p className="mt-2 min-h-14 text-parchment">
-          {segment?.narration ?? "..."}
-        </p>
+        <div className="panel-pixel mt-3 min-h-16 rounded-lg px-3 py-3">
+          <p className="text-parchment leading-snug" aria-live="polite">
+            {caption}
+          </p>
+        </div>
+        {segment?.actorPrompt &&
+          segment.key === myRole &&
+          ROLES[myRole].hasAction &&
+          !game.hasActed && (
+            <p className="mt-2 text-sm text-ember">{segment.actorPrompt}</p>
+          )}
       </header>
 
       {!soundOn && (
@@ -133,7 +183,7 @@ export function NightPhase({
       <p className="mt-auto text-center text-sm text-parchment-dim">
         Não mostre sua tela para ninguém!
       </p>
-    </main>
+    </AppShell>
   );
 }
 
@@ -178,12 +228,20 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
               ? `Lobisomens: ${info.wolfIds.map(nameOf).join(", ")}`
               : "Você é o único lobisomem."}
           </p>
-          <p className="mb-2 text-parchment-dim">Cartas do centro:</p>
-          <div className="flex gap-2">
-            {info.center.map((role, i) => (
-              <RoleCard key={i} role={role} size="sm" flip />
-            ))}
-          </div>
+          {info.center && info.center.length > 0 ? (
+            <>
+              <p className="mb-2 text-parchment-dim">Cartas do centro:</p>
+              <div className="flex gap-2">
+                {info.center.map((role, i) => (
+                  <RoleCard key={i} role={role} size="sm" flip />
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-parchment-dim">
+              As cartas do centro só podiam ser vistas durante a noite.
+            </p>
+          )}
         </div>
       );
     }
@@ -206,6 +264,13 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
             do centro. Agora esse é o seu papel!
           </p>
         </div>
+      );
+    case "escondeu_centro":
+      return (
+        <p className="text-parchment">
+          Você escondeu a carta do centro {info.index + 1} sem olhar. Ela será
+          revelada no fim da discussão!
+        </p>
       );
     case "trocou":
       return (
@@ -274,6 +339,7 @@ function ActionPanel({
         <CenterPicker
           count={view.game!.centerCount}
           busy={busy}
+          confirmLabel="Esconder sem olhar"
           onPick={(i) => submit({ type: "cacador_take", centerIndex: i })}
         />
       )}
@@ -301,10 +367,12 @@ function CenterPicker({
   count,
   busy,
   onPick,
+  confirmLabel = "Confirmar",
 }: {
   count: number;
   busy: boolean;
   onPick: (index: number) => void;
+  confirmLabel?: string;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   return (
@@ -325,7 +393,7 @@ function CenterPicker({
         disabled={selected === null || busy}
         onClick={() => selected !== null && onPick(selected)}
       >
-        {busy ? "..." : "Confirmar"}
+        {busy ? "..." : confirmLabel}
       </button>
     </div>
   );
@@ -335,28 +403,26 @@ function PlayerPicker({
   view,
   busy,
   onPick,
+  confirmLabel = "Confirmar",
 }: {
   view: RoomView;
   busy: boolean;
   onPick: (playerId: string) => void;
+  confirmLabel?: string;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const targets = view.players.filter((p) => p.id !== view.you.id);
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="scroll-cards flex justify-start gap-3 overflow-x-auto pb-1 sm:justify-center sm:flex-wrap">
         {targets.map((p) => (
-          <button
+          <CardBack
             key={p.id}
+            size="md"
+            label={p.nickname}
+            selected={selected === p.id}
             onClick={() => setSelected(p.id)}
-            className={`rounded-md border-2 px-3 py-2 text-left ${
-              selected === p.id
-                ? "border-ember bg-night-card text-ember"
-                : "border-night-card bg-grave text-parchment"
-            }`}
-          >
-            {p.nickname}
-          </button>
+          />
         ))}
       </div>
       <button
@@ -364,7 +430,11 @@ function PlayerPicker({
         disabled={!selected || busy}
         onClick={() => selected && onPick(selected)}
       >
-        {busy ? "..." : "Confirmar"}
+        {busy
+          ? "..."
+          : selected
+            ? `${confirmLabel}: ${targets.find((t) => t.id === selected)?.nickname}`
+            : confirmLabel}
       </button>
     </div>
   );

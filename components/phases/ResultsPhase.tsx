@@ -5,6 +5,7 @@ import { apiPost, getPlayerToken } from "@/lib/client/identity";
 import { ROLES, TEAMS } from "@/lib/game/roles";
 import type { RoomView } from "@/lib/api/views";
 import { RoleCard } from "@/components/RoleCard";
+import { AppShell } from "@/components/AppShell";
 
 export function ResultsPhase({
   view,
@@ -41,7 +42,7 @@ export function ResultsPhase({
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-5 px-5 py-8">
+    <AppShell wide className="gap-5">
       <header className="text-center">
         <h1
           className={`font-title text-lg ${youWon ? "text-swamp-bright" : "text-blood-bright"}`}
@@ -51,24 +52,49 @@ export function ResultsPhase({
         <p className="font-title mt-2 text-sm text-ember">
           {team.name.toUpperCase()} VENCERAM
         </p>
-        <p className="mt-1 text-parchment-dim">{team.goal}</p>
+        <p className="mt-1 text-parchment-dim">
+          {result.hunterAutoWin
+            ? "O Caçador escondeu um lobisomem! Os aliados vencem sem votação."
+            : team.goal}
+        </p>
       </header>
+
+      {result.hunterHidden && (
+        <section className="panel-pixel flex flex-col items-center gap-2 rounded-lg p-4">
+          <p className="font-title text-xs text-ember">CARTA DO CAÇADOR</p>
+          <RoleCard role={result.hunterHidden} size="md" flip />
+          <p className="text-parchment">
+            {ROLES[result.hunterHidden].name}
+            {result.hunterAutoWin ? " — vitória automática!" : ""}
+          </p>
+        </section>
+      )}
 
       <section className="panel-pixel rounded-lg p-4">
         <h2 className="font-title mb-3 text-xs text-blood-bright">
-          {result.deadIds.length > 1 ? "OS MORTOS" : "O MORTO"}
+          {result.hunterAutoWin
+            ? "SEM VOTAÇÃO"
+            : result.deadIds.length > 1
+              ? "OS MORTOS"
+              : "O MORTO"}
         </h2>
-        <div className="flex flex-wrap justify-center gap-3">
-          {result.deadIds.map((id) => (
-            <div key={id} className="flex flex-col items-center gap-1">
-              <RoleCard role={result.finalRoles[id]} size="md" flip />
-              <p className="text-parchment">☠ {nameOf(id)}</p>
-              <p className="text-sm text-parchment-dim">
-                {voteTally[id]} voto{voteTally[id] > 1 ? "s" : ""}
-              </p>
-            </div>
-          ))}
-        </div>
+        {result.hunterAutoWin ? (
+          <p className="text-center text-parchment-dim">
+            A partida acabou quando a carta escondida foi revelada.
+          </p>
+        ) : (
+          <div className="flex flex-wrap justify-center gap-3">
+            {result.deadIds.map((id) => (
+              <div key={id} className="flex flex-col items-center gap-1">
+                <RoleCard role={result.finalRoles[id]} size="md" flip />
+                <p className="text-parchment">☠ {nameOf(id)}</p>
+                <p className="text-sm text-parchment-dim">
+                  {voteTally[id]} voto{voteTally[id] > 1 ? "s" : ""}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="panel-pixel rounded-lg p-4">
@@ -98,7 +124,11 @@ export function ResultsPhase({
                   )}{" "}
                   <span className="text-ember">{ROLES[final].name}</span>
                   <span className="block text-sm text-parchment-dim">
-                    votou em {nameOf(result.votes[p.id])}
+                    {result.votes[p.id]
+                      ? `votou em ${nameOf(result.votes[p.id])}`
+                      : result.hunterAutoWin
+                        ? "sem voto"
+                        : "—"}
                   </span>
                 </span>
               </li>
@@ -107,9 +137,13 @@ export function ResultsPhase({
         </ul>
         <p className="mb-2 mt-4 text-parchment-dim">Centro no fim da noite:</p>
         <div className="flex justify-center gap-3">
-          {result.center.map((role, i) => (
-            <RoleCard key={i} role={role} size="sm" flip />
-          ))}
+          {result.center.length === 0 ? (
+            <p className="text-parchment-dim">Vazio</p>
+          ) : (
+            result.center.map((role, i) => (
+              <RoleCard key={i} role={role} size="sm" flip />
+            ))
+          )}
         </div>
       </section>
 
@@ -126,6 +160,6 @@ export function ResultsPhase({
           Aguardando o anfitrião começar outra partida...
         </p>
       )}
-    </main>
+    </AppShell>
   );
 }

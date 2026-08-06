@@ -7,6 +7,7 @@ import type { RoomView } from "@/lib/api/views";
 import { CardBack } from "@/components/RoleCard";
 import { PeekCard } from "@/components/PeekCard";
 import { NightInfo } from "./NightPhase";
+import { AppShell } from "@/components/AppShell";
 
 export function DiscussionPhase({
   view,
@@ -25,6 +26,7 @@ export function DiscussionPhase({
   const remaining = (endsAt - now) / 1000;
   const advanceSentRef = useRef(false);
   const [busy, setBusy] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
 
   useEffect(() => {
     if (remaining <= 0 && !advanceSentRef.current) {
@@ -45,13 +47,14 @@ export function DiscussionPhase({
       await refresh();
     } finally {
       setBusy(false);
+      setConfirmEnd(false);
     }
   }
 
   const urgent = remaining <= 30;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-5 py-6">
+    <AppShell className="gap-4">
       <header className="text-center">
         <h1 className="font-title text-sm text-ember">O DIA AMANHECEU</h1>
         <p
@@ -65,11 +68,18 @@ export function DiscussionPhase({
       </header>
 
       <section className="panel-pixel rounded-lg p-4">
-        <p className="mb-2 text-center text-parchment-dim">Cartas do centro</p>
+        <p className="mb-2 text-center text-parchment-dim">
+          Cartas do centro
+          {game.centerCount < 3 ? " (faltando carta escondida/devorada)" : ""}
+        </p>
         <div className="flex justify-center gap-3">
-          {Array.from({ length: game.centerCount }, (_, i) => (
-            <CardBack key={i} size="sm" label={`${i + 1}`} />
-          ))}
+          {game.centerCount === 0 ? (
+            <p className="text-parchment-dim">Nenhuma carta no centro</p>
+          ) : (
+            Array.from({ length: game.centerCount }, (_, i) => (
+              <CardBack key={i} size="sm" label={`${i + 1}`} />
+            ))
+          )}
         </div>
       </section>
 
@@ -84,14 +94,41 @@ export function DiscussionPhase({
       <NightInfo view={view} />
 
       {view.you.isHost && (
-        <button
-          className="btn-pixel btn-pixel--ghost mt-auto rounded-md"
-          disabled={busy}
-          onClick={endEarly}
-        >
-          Encerrar discussão e votar
-        </button>
+        <div className="mt-auto flex flex-col gap-2">
+          {!confirmEnd ? (
+            <button
+              className="btn-pixel btn-pixel--ghost rounded-md"
+              disabled={busy}
+              onClick={() => setConfirmEnd(true)}
+            >
+              Encerrar discussão (todos concordam)
+            </button>
+          ) : (
+            <div className="panel-pixel flex flex-col gap-3 rounded-lg p-4">
+              <p className="text-center text-parchment">
+                Todos os jogadores concordam em encerrar a discussão e ir para a
+                votação?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  className="btn-pixel btn-pixel--ghost flex-1 rounded-md"
+                  disabled={busy}
+                  onClick={() => setConfirmEnd(false)}
+                >
+                  Voltar
+                </button>
+                <button
+                  className="btn-pixel flex-1 rounded-md"
+                  disabled={busy}
+                  onClick={endEarly}
+                >
+                  {busy ? "..." : "Sim, encerrar"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
-    </main>
+    </AppShell>
   );
 }

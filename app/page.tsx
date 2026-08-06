@@ -6,16 +6,16 @@ import { useRouter } from "next/navigation";
 import {
   apiPost,
   getPlayerToken,
-  getSavedNickname,
   saveNickname,
 } from "@/lib/client/identity";
+import { usePersistedNickname } from "@/lib/client/usePersistedNickname";
 import type { RoomView } from "@/lib/api/views";
+import { AppShell } from "@/components/AppShell";
+import { AmbientMusic } from "@/components/AmbientMusic";
 
 export default function HomePage() {
   const router = useRouter();
-  const [nickname, setNickname] = useState(() =>
-    typeof window === "undefined" ? "" : getSavedNickname(),
-  );
+  const { nickname, setNickname } = usePersistedNickname();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,20 +53,23 @@ export default function HomePage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 px-6 py-10">
+    <AppShell className="items-center justify-center gap-6 sm:gap-8">
+      <AmbientMusic />
       <img
         src="/art/logo.png"
         alt="Lobisomem por Uma Noite — Monstros"
-        className="pixel-art float-slow w-64 max-w-full"
+        className="pixel-art float-slow w-48 sm:w-64 max-w-full"
         draggable={false}
       />
-      <h1 className="font-title flicker text-center text-lg leading-relaxed text-ember">
+      <h1 className="font-title flicker text-center text-base sm:text-lg leading-relaxed text-ember">
         LOBISOMEM
-        <span className="block text-xs text-parchment">POR UMA NOITE</span>
+        <span className="block text-[0.65rem] sm:text-xs text-parchment">
+          POR UMA NOITE
+        </span>
         <span className="block text-sm text-blood-bright">MONSTROS</span>
       </h1>
 
-      <div className="panel-pixel w-full rounded-lg p-5">
+      <div className="panel-pixel w-full rounded-lg p-4 sm:p-5">
         <label className="mb-1 block text-parchment-dim">Seu apelido</label>
         <input
           className="input-pixel rounded-md"
@@ -74,7 +77,8 @@ export default function HomePage() {
           placeholder="Ex.: Zé do Brejo"
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
-          suppressHydrationWarning
+          autoComplete="nickname"
+          enterKeyHint="done"
         />
 
         <button
@@ -98,6 +102,11 @@ export default function HomePage() {
           placeholder="ABCD"
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          inputMode="text"
+          enterKeyHint="go"
         />
         <button
           className="btn-pixel btn-pixel--swamp mt-4 w-full rounded-md"
@@ -115,6 +124,6 @@ export default function HomePage() {
       <p className="text-center text-parchment-dim">
         3 a 7 jogadores · uma noite · um monstro entre vocês
       </p>
-    </main>
+    </AppShell>
   );
 }

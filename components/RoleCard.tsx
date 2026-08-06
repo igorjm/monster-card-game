@@ -81,7 +81,11 @@ export function CardBack({
         />
       </div>
       {label && (
-        <div className={`font-title ${s.text} mt-1.5 truncate text-center uppercase text-parchment-dim`}>
+        <div
+          className={`font-title ${s.text} mt-1.5 truncate text-center uppercase ${
+            selected ? "text-ember" : "text-parchment"
+          }`}
+        >
           {label}
         </div>
       )}

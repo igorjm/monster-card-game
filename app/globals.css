@@ -23,6 +23,12 @@
   --shadow-pixel-sm: 0 3px 0 0 rgba(0, 0, 0, 0.55);
 }
 
+html {
+  /* Prefer dynamic viewport; avoid rubber-band scroll stealing game gestures */
+  height: 100%;
+  overscroll-behavior: none;
+}
+
 body {
   font-family: var(--font-pixel-body), monospace;
   font-size: 1.25rem;
@@ -32,7 +38,18 @@ body {
     var(--color-night);
   min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
   user-select: none;
+  overscroll-behavior-y: contain;
+}
+
+/* Allow selecting copyable codes / errors when needed */
+input,
+textarea,
+[contenteditable] {
+  user-select: text;
 }
 
 .font-title {
@@ -47,13 +64,14 @@ img.pixel-art {
   image-rendering: pixelated;
 }
 
-/* Chunky pixel button */
+/* Chunky pixel button — min 44px tap target for mobile */
 .btn-pixel {
   font-family: var(--font-pixel-title), monospace;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  min-height: 2.75rem;
   padding: 0.9rem 1.25rem;
   font-size: 0.8rem;
   color: var(--color-parchment);
@@ -105,13 +123,16 @@ img.pixel-art {
 
 .input-pixel {
   font-family: var(--font-pixel-body), monospace;
+  /* ≥16px avoids iOS auto-zoom on focus */
   font-size: 1.5rem;
   width: 100%;
+  min-height: 2.75rem;
   padding: 0.65rem 0.9rem;
   color: var(--color-parchment);
   background: var(--color-grave);
   border: 3px solid var(--color-night-card);
   outline: none;
+  border-radius: 0.375rem;
 }
 
 .input-pixel:focus {
@@ -172,4 +193,19 @@ img.pixel-art {
 
 .shake {
   animation: shake 0.4s steps(8);
+}
+
+/* Horizontal card strip: swipe/scroll without a visible scrollbar */
+.scroll-cards {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  touch-action: pan-x;
+  max-width: 100%;
+}
+
+.scroll-cards::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }

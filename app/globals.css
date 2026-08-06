@@ -24,9 +24,9 @@
 }
 
 html {
-  /* Prefer dynamic viewport; avoid rubber-band scroll stealing game gestures */
-  height: 100%;
-  overscroll-behavior: none;
+  /* Let the document grow so iOS standalone PWAs can scroll the lobby. */
+  min-height: 100%;
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -37,12 +37,15 @@ body {
     radial-gradient(ellipse at 50% -10%, #351b5e 0%, transparent 55%),
     var(--color-night);
   min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   touch-action: manipulation;
   user-select: none;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: none;
 }
 
 /* Allow selecting copyable codes / errors when needed */
@@ -195,12 +198,14 @@ img.pixel-art {
   animation: shake 0.4s steps(8);
 }
 
-/* Horizontal card strip: swipe/scroll without a visible scrollbar */
+/* Horizontal card strip: swipe/scroll without a visible scrollbar.
+   pan-y kept so vertical page scroll still works on iOS PWA when the
+   gesture starts on the strip. */
 .scroll-cards {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  touch-action: pan-x;
+  touch-action: pan-x pan-y;
   max-width: 100%;
 }
 

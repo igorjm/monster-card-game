@@ -1,6 +1,6 @@
 "use client";
 
-import { getPlayerToken } from "@/lib/client/identity";
+import { apiPost, getPlayerToken } from "@/lib/client/identity";
 
 /** Fire-and-forget leave so closing the tab drops the lobby seat. */
 export function leaveRoomKeepalive(code: string) {
@@ -16,4 +16,11 @@ export function leaveRoomKeepalive(code: string) {
   } catch {
     /* unload — best effort */
   }
+}
+
+/** Awaited leave for the explicit "Sair da sala" action. */
+export async function leaveRoom(code: string) {
+  await apiPost(`/api/rooms/${code.toUpperCase()}/leave`, {
+    token: getPlayerToken(),
+  });
 }

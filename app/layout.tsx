@@ -100,7 +100,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${pixelTitle.variable} ${pixelBody.variable} h-full antialiased`}
     >
       <body
-        className="min-h-dvh flex flex-col bg-night text-parchment font-body"
+        className="min-h-dvh flex flex-col bg-night text-parchment font-body overflow-x-hidden"
         suppressHydrationWarning
       >
         {children}

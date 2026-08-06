@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
+import { leaveRoom } from "@/lib/client/leaveRoom";
+import { shutdownLiveKitMedia } from "@/lib/client/livekitMedia";
 import { buildDeck } from "@/lib/game/engine";
 import { ROLES } from "@/lib/game/roles";
 import { MIN_PLAYERS, type Role } from "@/lib/game/types";
@@ -24,17 +27,21 @@ export function LobbyPhase({
   view: RoomView;
   refresh: () => Promise<void>;
 }) {
+  const router = useRouter();
   const [discussionSeconds, setDiscussionSeconds] = useState(
     view.settings.discussionSeconds,
   );
   const [busy, setBusy] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const enoughPlayers = view.players.length >= MIN_PLAYERS;
+  // Stable preview (mumia when 3–4 would randomize mumia/esqueleto).
+  const previewRng = () => 0;
   const rolesInGame: Role[] = enoughPlayers
-    ? buildDeck(view.players.length)
-    : buildDeck(MIN_PLAYERS);
+    ? buildDeck(view.players.length, previewRng)
+    : buildDeck(MIN_PLAYERS, previewRng);
 
   async function start() {
     setBusy(true);
@@ -49,6 +56,18 @@ export function LobbyPhase({
       setError(e instanceof Error ? e.message : "Erro inesperado.");
       setBusy(false);
     }
+  }
+
+  async function leave() {
+    setLeaving(true);
+    setError(null);
+    try {
+      await shutdownLiveKitMedia();
+      await leaveRoom(view.code);
+    } catch {
+      // Still leave the screen — seat may already be gone.
+    }
+    router.replace("/");
   }
 
   async function copyCode() {
@@ -130,11 +149,8 @@ export function LobbyPhase({
           jogadores + 3 cartas no centro · arraste para ver todas
         </p>
         <p className="mt-2 text-sm leading-snug text-parchment-dim">
-          Mortos-vivos no baralho:{" "}
-          <span className="text-parchment">Zumbi</span> e{" "}
-          <span className="text-parchment">Vampiro</span> desde {MIN_PLAYERS}{" "}
-          jogadores; <span className="text-parchment">Múmia</span> a partir de
-          4; <span className="text-parchment">Esqueleto</span> a partir de 6.
+          Baralho oficial: com 3, um lobisomem e múmia ou esqueleto; com 4, dois
+          lobisomens; a partir de 5 entram múmia, esqueleto e aldeão(ões).
         </p>
       </section>
 
@@ -160,7 +176,7 @@ export function LobbyPhase({
           </div>
           <button
             className="btn-pixel mt-4 w-full rounded-md"
-            disabled={!enoughPlayers || busy}
+            disabled={!enoughPlayers || busy || leaving}
             onClick={start}
           >
             {busy ? "Distribuindo cartas..." : "Começar a noite"}
@@ -174,6 +190,15 @@ export function LobbyPhase({
           Aguardando o anfitrião começar a partida...
         </p>
       )}
+
+      <button
+        type="button"
+        className="btn-pixel btn-pixel--ghost w-full rounded-md"
+        disabled={leaving || busy}
+        onClick={leave}
+      >
+        {leaving ? "Saindo..." : "Sair da sala"}
+      </button>
 
       <details className="panel-pixel rounded-lg p-4">
         <summary className="font-title cursor-pointer text-xs text-parchment">

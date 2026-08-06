@@ -2,7 +2,7 @@
  * Caches the app shell + static art/audio for installability and faster loads.
  * Multiplayer APIs always go to the network.
  */
-const CACHE = "monstros-v2";
+const CACHE = "monstros-v3";
 const PRECACHE = [
   "/",
   "/offline",

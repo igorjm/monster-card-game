@@ -47,6 +47,9 @@ export default function HomePage() {
         token: getPlayerToken(),
       });
       router.push(`/sala/${view.code}`);
+      // Soft nav can stall after a hydration mismatch; unlock the CTA so
+      // the user can retry or the page can finish navigating.
+      setBusy(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro inesperado.");
       setBusy(null);
@@ -73,6 +76,7 @@ export default function HomePage() {
         { nickname: nickname.trim(), token: getPlayerToken() },
       );
       router.push(`/sala/${view.code}`);
+      setBusy(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro inesperado.");
       setBusy(null);

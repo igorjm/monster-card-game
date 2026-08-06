@@ -3,6 +3,7 @@
 import { use, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRoomView } from "@/lib/client/useRoomView";
+import { useLobbyLeave } from "@/lib/client/useLobbyLeave";
 import { apiPost, getPlayerToken, saveNickname } from "@/lib/client/identity";
 import { usePersistedNickname } from "@/lib/client/usePersistedNickname";
 import type { RoomView } from "@/lib/api/views";
@@ -21,6 +22,7 @@ export default function RoomPage({
 }) {
   const { code } = use(params);
   const { view, error, clockOffsetMs, refresh } = useRoomView(code);
+  useLobbyLeave(code, view);
 
   const beforeMatch = !view || view.phase === "lobby";
 

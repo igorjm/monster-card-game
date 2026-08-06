@@ -20,6 +20,7 @@ export async function POST(req: Request) {
       token: String(token),
       nickname: name,
       joinedAt: new Date().toISOString(),
+      lastSeenAt: new Date().toISOString(),
     };
 
     // Retry a few times in case of a room code collision.

@@ -24,7 +24,16 @@ export async function POST(
       const existing = current.players.find((p) => p.token === token);
       if (existing) {
         joined = existing;
-        return {}; // reconnecting — nothing to change
+        if (current.phase === "lobby") {
+          return {
+            players: current.players.map((p) =>
+              p.token === token
+                ? { ...p, lastSeenAt: new Date().toISOString() }
+                : p,
+            ),
+          };
+        }
+        return {}; // reconnecting mid-game — nothing to change
       }
       if (current.phase !== "lobby") {
         throw new ApiError("A partida já começou nesta sala.");
@@ -44,6 +53,7 @@ export async function POST(
         token: String(token),
         nickname: name,
         joinedAt: new Date().toISOString(),
+        lastSeenAt: new Date().toISOString(),
       };
       return { players: [...current.players, joined] };
     });

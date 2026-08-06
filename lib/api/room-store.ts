@@ -40,6 +40,14 @@ export async function insertRoom(room: Omit<Room, "id" | "version">) {
   return data as Room;
 }
 
+export async function deleteRoom(code: string): Promise<void> {
+  const { error } = await adminClient()
+    .from("rooms")
+    .delete()
+    .eq("code", code.toUpperCase());
+  if (error) throw new ApiError("Erro ao encerrar a sala.", 500);
+}
+
 /**
  * Read-modify-write with optimistic concurrency: `mutate` receives a fresh
  * room and returns the fields to update. Retries on version conflicts.

@@ -19,6 +19,8 @@ export interface PlayerInfo {
   token: string;
   nickname: string;
   joinedAt: string;
+  /** Last lobby presence ping (ISO). Used to drop closed tabs. */
+  lastSeenAt?: string;
 }
 
 export type SwapTarget =

@@ -14,9 +14,12 @@ export function livekitUrl(): string {
   return url;
 }
 
-/** One LiveKit room per game room + phase, e.g. monstros-ABCD-discussao */
-export function voiceRoomName(code: string): string {
-  return `monstros-${code.toUpperCase()}-discussao`;
+/** One LiveKit room per game room + talk phase (lobby or discussion). */
+export function voiceRoomName(
+  code: string,
+  phase: "lobby" | "discussao",
+): string {
+  return `monstros-${code.toUpperCase()}-${phase}`;
 }
 
 export async function createVoiceToken(opts: {

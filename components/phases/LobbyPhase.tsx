@@ -9,6 +9,7 @@ import type { RoomView } from "@/lib/api/views";
 import { RoleCard } from "@/components/RoleCard";
 import { CardStrip } from "@/components/CardStrip";
 import { AppShell } from "@/components/AppShell";
+import { DiscussionVoice } from "@/components/DiscussionVoice";
 
 const DISCUSSION_OPTIONS = [
   { seconds: 300, label: "5 min" },
@@ -113,6 +114,8 @@ export function LobbyPhase({
         )}
       </section>
 
+      <DiscussionVoice view={view} variant="lobby" />
+
       <section className="panel-pixel min-w-0 rounded-lg p-4">
         <h2 className="font-title mb-3 text-xs text-parchment">
           CARTAS NA PARTIDA ({rolesInGame.length})
@@ -125,6 +128,13 @@ export function LobbyPhase({
         <p className="mt-2 text-sm text-parchment-dim">
           {view.players.length >= MIN_PLAYERS ? view.players.length : MIN_PLAYERS}{" "}
           jogadores + 3 cartas no centro · arraste para ver todas
+        </p>
+        <p className="mt-2 text-sm leading-snug text-parchment-dim">
+          Mortos-vivos no baralho:{" "}
+          <span className="text-parchment">Zumbi</span> e{" "}
+          <span className="text-parchment">Vampiro</span> desde {MIN_PLAYERS}{" "}
+          jogadores; <span className="text-parchment">Múmia</span> a partir de
+          4; <span className="text-parchment">Esqueleto</span> a partir de 6.
         </p>
       </section>
 

@@ -134,10 +134,12 @@ npm run lint
 npm run build
 ```
 
-## Voz na discussão
+## Voz no lobby e na discussão
 
-Durante a discussão, os jogadores entram numa sala de voz **LiveKit** (celular ou
-desktop). Entram mutados e tocam **Falar** para ligar o microfone.
+No **lobby** (sala de espera) e na **discussão**, os jogadores entram numa sala
+**LiveKit** (celular ou desktop). O **microfone liga automaticamente**; cada um
+muta se quiser. A **câmera é opcional** — fica desligada até o jogador tocar em
+**Ligar câmera**. Áudio/vídeo desligam automaticamente à noite / votação / resultado.
 
 1. Crie um projeto em [LiveKit Cloud](https://cloud.livekit.io).
 2. Copie URL, API Key e API Secret para `.env.local` / Vercel.

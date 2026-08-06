@@ -10,6 +10,8 @@ let holders = 0;
 let stopScheduled = false;
 let fadeTimer: ReturnType<typeof setInterval> | null = null;
 let gestureBound = false;
+/** While > 0, lobby bed stays silent so voice chat isn’t drowned out. */
+let voiceDucks = 0;
 
 function getAudio(): HTMLAudioElement {
   if (!audio) {
@@ -42,12 +44,26 @@ function bindGestureUnlock() {
 async function playNow() {
   const el = getAudio();
   clearFade();
-  el.volume = AMBIENT_VOLUME;
+  el.volume = voiceDucks > 0 ? 0 : AMBIENT_VOLUME;
   try {
     await el.play();
     unlocked = true;
   } catch {
     bindGestureUnlock();
+  }
+}
+
+/** Mute ambience while LiveKit voice is connected (lobby). */
+export function duckAmbientForVoice() {
+  voiceDucks += 1;
+  if (audio) audio.volume = 0;
+}
+
+export function unduckAmbientForVoice() {
+  voiceDucks = Math.max(0, voiceDucks - 1);
+  if (voiceDucks === 0 && audio && holders > 0) {
+    audio.volume = AMBIENT_VOLUME;
+    if (audio.paused) void playNow();
   }
 }
 

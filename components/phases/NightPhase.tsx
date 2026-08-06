@@ -22,6 +22,7 @@ import { CardBack, RoleCard } from "@/components/RoleCard";
 import { PeekCard } from "@/components/PeekCard";
 import { AppShell } from "@/components/AppShell";
 import { HostPauseButton, PausedBanner } from "@/components/HostPauseButton";
+import { shutdownLiveKitMedia } from "@/lib/client/livekitMedia";
 
 const NIGHT_SOUND_KEY = "monstros:night-sound";
 
@@ -82,6 +83,11 @@ export function NightPhase({
   const spokenKeyRef = useRef<string | null>(null);
   const advanceSentRef = useRef(false);
   const wolfPeekSentRef = useRef(false);
+
+  // Night is secret — kill lobby/discussion cams + mics as soon as this phase mounts.
+  useEffect(() => {
+    void shutdownLiveKitMedia();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -283,7 +289,7 @@ export function NightPhase({
       )}
 
       <section className="flex flex-col items-center gap-2">
-        <p className="text-parchment-dim">Sua carta (segure para espiar)</p>
+        <p className="text-parchment-dim">Sua carta (toque para mostrar/esconder)</p>
         <PeekCard role={myRole} />
       </section>
 

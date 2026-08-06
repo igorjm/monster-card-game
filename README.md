@@ -35,22 +35,20 @@ cartas roda **só no servidor** — ninguém vê a carta alheia.
 | Time | Papéis |
 | --- | --- |
 | **Aliados** | Aldeão, Bruxa, Caçador, Vampiro |
-| **Lobisomens** | Lobisomem (×2 no baralho completo) |
+| **Lobisomens** | Lobisomem (1 ou 2, conforme o número de jogadores) |
 | **Mortos-vivos** | Zumbi, Múmia, Esqueleto |
 
-<p align="center">
-  <img src="public/art/lobisomem.png" alt="Lobisomem" width="120" />
-  <img src="public/art/zumbi.png" alt="Zumbi" width="120" />
-  <img src="public/art/vampiro.png" alt="Vampiro" width="120" />
-  <img src="public/art/bruxa.png" alt="Bruxa" width="120" />
-</p>
-<p align="center">
-  <img src="public/art/cacador.png" alt="Caçador" width="120" />
-  <img src="public/art/mumia.png" alt="Múmia" width="120" />
-  <img src="public/art/esqueleto.png" alt="Esqueleto" width="120" />
-  <img src="public/art/aldeao.png" alt="Aldeão" width="120" />
-  <img src="public/art/card-back.png" alt="Verso da carta" width="120" />
-</p>
+### Baralho por número de jogadores (n + 3 no centro)
+
+| Jogadores | Lobisomem | Caçador | Bruxa | Vampiro | Zumbi | Múmia / Esqueleto | Aldeão |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 3 | 1 | 1 | 1 | 1 | 1 | 1 (um dos dois) | 0 |
+| 4 | 2 | 1 | 1 | 1 | 1 | 1 (um dos dois) | 0 |
+| 5 | 1 | 1 | 1 | 1 | 1 | ambos | 1 |
+| 6 | 1 | 1 | 1 | 1 | 1 | ambos | 2 |
+| 7 | 1 | 1 | 1 | 1 | 1 | ambos | 3 |
+
+(Com 5–7 jogadores o baralho precisa de n+3 cartas; a tabela oficial impressa fica 1 aldeão abaixo — preenchido para bater o cemitério de 3.)
 
 ### Ações da noite
 
@@ -58,7 +56,7 @@ cartas roda **só no servidor** — ninguém vê a carta alheia.
 | --- | --- |
 | **Caçador** | Esconde uma carta do centro **sem olhar**. Se for lobisomem, aliados vencem ao fim da discussão |
 | **Bruxa** | Olha a carta de um jogador |
-| **Lobisomem** | Reconhece os outros lobisomens e olha o centro **só de noite** |
+| **Lobisomem** | Reconhece os outros lobisomens e olha o centro **só no turno dele** (depois vira de novo) |
 | **Zumbi** | Remove uma carta do centro, assume o papel e executa a ação dele |
 | **Vampiro** | Troca a própria carta com a de um jogador ou do centro |
 | Aldeão / Múmia / Esqueleto | Dormem |

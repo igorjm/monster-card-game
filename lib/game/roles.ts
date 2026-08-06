@@ -51,8 +51,8 @@ export const ROLES: Record<Role, RoleMeta> = {
     letter: "L",
     team: "lobisomens",
     description:
-      "Reconhece os outros lobisomens e olha as cartas do centro durante a noite. Memorize bem — de dia não poderá ver de novo!",
-    nightHint: "Veja seus companheiros e as cartas que restam no centro.",
+      "Reconhece os outros lobisomens e olha as cartas do centro só no seu turno. Memorize — depois elas viram de novo!",
+    nightHint: "Veja seus companheiros e as cartas que restam no centro. Memorize!",
     art: "/art/lobisomem.png",
     hasAction: false,
   },
@@ -118,18 +118,65 @@ export const TEAMS: Record<Team, { name: string; goal: string }> = {
 };
 
 /**
- * Deck inclusion priority: the first (playerCount + 3) roles enter the game.
- * Guarantees at least one lobisomem for any player count.
+ * Official Monstros deck by player count (n players + 3 center).
+ * For 3–4 players, mumia vs esqueleto is chosen by `rng`.
  */
-export const DECK_PRIORITY: Role[] = [
-  "lobisomem",
-  "lobisomem",
-  "bruxa",
-  "zumbi",
-  "vampiro",
-  "cacador",
-  "mumia",
-  "aldeao",
-  "esqueleto",
-  "aldeao",
-];
+export function buildDeck(
+  playerCount: number,
+  rng: () => number = Math.random,
+): Role[] {
+  const sleeper: Role = rng() < 0.5 ? "mumia" : "esqueleto";
+  switch (playerCount) {
+    case 3:
+      return ["lobisomem", "cacador", "bruxa", "vampiro", sleeper, "zumbi"];
+    case 4:
+      return [
+        "lobisomem",
+        "lobisomem",
+        "cacador",
+        "bruxa",
+        "vampiro",
+        sleeper,
+        "zumbi",
+      ];
+    case 5:
+      // Chart lists 7 roles; game always uses n+3 (=8). One aldeão fills the seat.
+      return [
+        "lobisomem",
+        "cacador",
+        "bruxa",
+        "vampiro",
+        "mumia",
+        "esqueleto",
+        "zumbi",
+        "aldeao",
+      ];
+    case 6:
+      return [
+        "lobisomem",
+        "cacador",
+        "bruxa",
+        "vampiro",
+        "mumia",
+        "esqueleto",
+        "zumbi",
+        "aldeao",
+        "aldeao",
+      ];
+    case 7:
+      return [
+        "lobisomem",
+        "cacador",
+        "bruxa",
+        "vampiro",
+        "mumia",
+        "esqueleto",
+        "zumbi",
+        "aldeao",
+        "aldeao",
+        "aldeao",
+      ];
+    default:
+      throw new Error(`Jogadores deve ser entre 3 e 7 (recebido ${playerCount}).`);
+  }
+}

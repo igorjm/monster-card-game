@@ -1,6 +1,5 @@
-import { DECK_PRIORITY, ROLES } from "./roles";
+import { ROLES, buildDeck } from "./roles";
 import {
-  CENTER_CARDS,
   type GameResult,
   type GameState,
   type NightAction,
@@ -11,9 +10,7 @@ import {
 } from "./types";
 import { segmentForRole, WINDOW_GRACE_SECONDS } from "./timeline";
 
-export function buildDeck(playerCount: number): Role[] {
-  return DECK_PRIORITY.slice(0, playerCount + CENTER_CARDS);
-}
+export { buildDeck };
 
 function shuffle<T>(items: T[], rng: () => number = Math.random): T[] {
   const arr = [...items];
@@ -29,7 +26,7 @@ export function dealGame(
   discussionSeconds: number,
   rng: () => number = Math.random,
 ): GameState {
-  const deck = shuffle(buildDeck(players.length), rng);
+  const deck = shuffle(buildDeck(players.length, rng), rng);
   const originalRoles: Record<string, Role> = {};
   players.forEach((p, i) => {
     originalRoles[p.id] = deck[i];

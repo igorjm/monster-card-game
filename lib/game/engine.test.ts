@@ -44,16 +44,48 @@ function at(state: GameState, seconds: number): number {
 }
 
 describe("buildDeck", () => {
+  const fixed = () => 0; // always mumia when sleeper is random
+
   it("uses playerCount + 3 cards", () => {
     for (let n = 3; n <= 7; n++) {
-      expect(buildDeck(n)).toHaveLength(n + 3);
+      expect(buildDeck(n, fixed)).toHaveLength(n + 3);
     }
   });
 
   it("always includes at least one lobisomem", () => {
     for (let n = 3; n <= 7; n++) {
-      expect(buildDeck(n)).toContain("lobisomem");
+      expect(buildDeck(n, fixed)).toContain("lobisomem");
     }
+  });
+
+  it("matches the official Monstros chart", () => {
+    const count = (deck: Role[], role: Role) =>
+      deck.filter((r) => r === role).length;
+
+    const d3 = buildDeck(3, fixed);
+    expect(count(d3, "lobisomem")).toBe(1);
+    expect(count(d3, "cacador")).toBe(1);
+    expect(count(d3, "bruxa")).toBe(1);
+    expect(count(d3, "vampiro")).toBe(1);
+    expect(count(d3, "zumbi")).toBe(1);
+    expect(count(d3, "aldeao")).toBe(0);
+    expect(count(d3, "mumia") + count(d3, "esqueleto")).toBe(1);
+
+    const d4 = buildDeck(4, () => 0.9); // esqueleto
+    expect(count(d4, "lobisomem")).toBe(2);
+    expect(count(d4, "esqueleto")).toBe(1);
+    expect(count(d4, "mumia")).toBe(0);
+    expect(count(d4, "aldeao")).toBe(0);
+
+    const d5 = buildDeck(5, fixed);
+    expect(count(d5, "lobisomem")).toBe(1);
+    expect(count(d5, "mumia")).toBe(1);
+    expect(count(d5, "esqueleto")).toBe(1);
+    expect(count(d5, "aldeao")).toBe(1);
+
+    expect(count(buildDeck(6, fixed), "aldeao")).toBe(2);
+    expect(count(buildDeck(7, fixed), "aldeao")).toBe(3);
+    expect(count(buildDeck(7, fixed), "lobisomem")).toBe(1);
   });
 });
 

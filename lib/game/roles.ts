@@ -30,8 +30,8 @@ export const ROLES: Record<Role, RoleMeta> = {
     letter: "C",
     team: "aliados",
     description:
-      "Durante a noite, pega uma carta do centro e a esconde, deixando a sua no lugar.",
-    nightHint: "Escolha uma carta do centro para pegar e esconder.",
+      "Durante a noite, esconde uma carta do centro sem olhar. Se for um lobisomem, os aliados vencem ao amanhecer da discussão.",
+    nightHint: "Escolha uma carta do centro para esconder — você não pode olhar!",
     art: "/art/cacador.png",
     hasAction: true,
   },
@@ -51,8 +51,8 @@ export const ROLES: Record<Role, RoleMeta> = {
     letter: "L",
     team: "lobisomens",
     description:
-      "Reconhece os outros lobisomens e olha as cartas do centro. Sobreviva à votação!",
-    nightHint: "Abra os olhos: veja seus aliados e as cartas do centro.",
+      "Reconhece os outros lobisomens e olha as cartas do centro durante a noite. Memorize bem — de dia não poderá ver de novo!",
+    nightHint: "Veja seus companheiros e as cartas que restam no centro.",
     art: "/art/lobisomem.png",
     hasAction: false,
   },
@@ -84,7 +84,7 @@ export const ROLES: Record<Role, RoleMeta> = {
     letter: "Z",
     team: "mortos-vivos",
     description:
-      "Morto-vivo. Pega uma carta do centro, assume o papel dela e faz a ação do novo papel.",
+      "Morto-vivo. Remove uma carta do centro, assume o papel dela e faz a ação do novo papel. A carta some do centro.",
     nightHint: "Escolha uma carta do centro para devorar e assumir.",
     art: "/art/zumbi.png",
     hasAction: true,

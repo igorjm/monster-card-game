@@ -40,8 +40,24 @@ export interface RoomView {
     centerCount: number;
     votedCount: number;
     yourVote?: string;
+    /** Public: hunter's card after discussion ends. */
+    hunterRevealed?: Role;
     result?: GameResult;
   } | null;
+}
+
+/** Werewolves may only see center cards during the night. */
+function filterPrivateInfo(
+  info: PrivateInfo[],
+  phase: Phase,
+): PrivateInfo[] {
+  if (phase === "noite") return info;
+  return info.map((item) => {
+    if (item.kind === "lobisomens") {
+      return { kind: "lobisomens", wolfIds: item.wolfIds };
+    }
+    return item;
+  });
 }
 
 export function buildView(room: Room, player: PlayerInfo): RoomView {
@@ -69,12 +85,19 @@ export function buildView(room: Room, player: PlayerInfo): RoomView {
           discussionSeconds: game.discussionSeconds,
           discussionEndsAt: game.discussionEndsAt,
           yourRole: game.originalRoles[player.id],
-          yourInfo: game.privateInfo[player.id] ?? [],
+          yourInfo: filterPrivateInfo(
+            game.privateInfo[player.id] ?? [],
+            room.phase,
+          ),
           hasActed: !!game.acted[player.id],
           pendingChain: game.pendingChain[player.id],
           centerCount: game.center.length,
           votedCount: Object.keys(game.votes).length,
           yourVote: game.votes[player.id],
+          hunterRevealed:
+            room.phase === "votacao" || room.phase === "resultado"
+              ? game.hunterRevealed
+              : undefined,
           result: room.phase === "resultado" ? game.result : undefined,
         }
       : null,

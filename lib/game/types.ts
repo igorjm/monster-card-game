@@ -29,17 +29,20 @@ export type NightAction =
   | { type: "zumbi_take"; centerIndex: number }
   | { type: "bruxa_look"; targetPlayerId: string }
   | { type: "cacador_take"; centerIndex: number }
-  | { type: "vampiro_swap"; target: SwapTarget };
+  | { type: "vampiro_swap"; target: SwapTarget }
+  | { type: "lobisomem_peek" };
 
 /** Private information revealed to a single player during the night. */
 export type PrivateInfo =
   | {
       kind: "lobisomens";
       wolfIds: string[];
-      center: Role[];
+      /** Present only while phase is noite; stripped from views later. */
+      center?: Role[];
     }
   | { kind: "viu_jogador"; playerId: string; role: Role }
   | { kind: "pegou_centro"; index: number; role: Role }
+  | { kind: "escondeu_centro"; index: number }
   | {
       kind: "trocou";
       target: SwapTarget;
@@ -54,6 +57,10 @@ export interface GameResult {
   center: Role[];
   centerOriginal: Role[];
   votes: Record<string, string>;
+  /** Card the hunter hid, revealed at end of discussion. */
+  hunterHidden?: Role;
+  /** Allies won because the hunter's hidden card was a werewolf. */
+  hunterAutoWin?: boolean;
 }
 
 export interface GameState {
@@ -66,6 +73,13 @@ export interface GameState {
   currentRoles: Record<string, Role>;
   center: Role[];
   centerOriginal: Role[];
+  /** Card removed by the hunter, unseen until discussion ends. */
+  hunterHidden?: Role;
+  /**
+   * Public reveal after discussion (same as hunterHidden once revealed).
+   * Set when leaving discussao so voting screens can show it.
+   */
+  hunterRevealed?: Role;
   /** Private night info per player id. */
   privateInfo: Record<string, PrivateInfo[]>;
   /** Which players already used their night action. */

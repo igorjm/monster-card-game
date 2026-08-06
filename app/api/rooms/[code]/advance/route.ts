@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { findPlayerByToken, updateRoom } from "@/lib/api/room-store";
 import { errorResponse } from "@/lib/api/respond";
 import { buildView } from "@/lib/api/views";
-import { elapsedNightSeconds } from "@/lib/game/engine";
+import { elapsedNightSeconds, resolveDiscussionEnd } from "@/lib/game/engine";
 import { NIGHT_TOTAL_SECONDS } from "@/lib/game/timeline";
 
 export const runtime = "nodejs";
@@ -10,9 +10,8 @@ export const runtime = "nodejs";
 /**
  * POST /api/rooms/[code]/advance — Body: { token, force? }
  * Moves noite -> discussao when the night timer ends, and
- * discussao -> votacao when the discussion timer ends.
+ * discussao -> votacao (or resultado if hunter hid a werewolf).
  * The host may pass force=true to end the discussion early.
- * Idempotent: safe for every client to call.
  */
 export async function POST(
   req: Request,
@@ -46,7 +45,18 @@ export async function POST(
           Date.now() >= new Date(game.discussionEndsAt).getTime() - 1000;
         const hostForced = force && player.id === current.host_id;
         if (!ended && !hostForced) return {};
-        return { phase: "votacao" as const };
+
+        const outcome = resolveDiscussionEnd(game);
+        if (outcome.kind === "auto_win") {
+          return {
+            phase: "resultado" as const,
+            game: outcome.state,
+          };
+        }
+        return {
+          phase: "votacao" as const,
+          game: outcome.state,
+        };
       }
 
       return {};

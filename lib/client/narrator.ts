@@ -1,8 +1,13 @@
 "use client";
 
+import {
+  NIGHT_AUDIO_SRC,
+  type SubtitleCue,
+} from "@/lib/game/timeline";
+
 /**
- * Night narration. Uses the real audio file at /audio/noite.mp3 when present;
- * otherwise falls back to pt-BR speech synthesis per timeline segment.
+ * Night narration. Prefer `public/audio/monster.m4a`; fall back to pt-BR TTS
+ * per timeline segment if the file is missing.
  */
 
 let audioAvailable: boolean | null = null;
@@ -10,13 +15,18 @@ let audioAvailable: boolean | null = null;
 export async function checkNightAudio(): Promise<boolean> {
   if (audioAvailable !== null) return audioAvailable;
   try {
-    const res = await fetch("/audio/noite.mp3", { method: "HEAD" });
+    const res = await fetch(NIGHT_AUDIO_SRC, { method: "HEAD" });
     const type = res.headers.get("content-type") ?? "";
-    audioAvailable = res.ok && type.includes("audio");
+    audioAvailable =
+      res.ok && (type.includes("audio") || type.includes("octet-stream") || type === "");
   } catch {
     audioAvailable = false;
   }
   return audioAvailable;
+}
+
+export function nightAudioSrc(): string {
+  return NIGHT_AUDIO_SRC;
 }
 
 let voice: SpeechSynthesisVoice | null = null;
@@ -46,6 +56,14 @@ export function speak(text: string) {
 
 export function stopSpeaking() {
   window.speechSynthesis?.cancel();
+}
+
+/** Prefer the live subtitle cue; fall back to the segment narration. */
+export function displayCaption(
+  subtitle: SubtitleCue | undefined,
+  fallback: string | undefined,
+): string {
+  return subtitle?.text ?? fallback ?? "...";
 }
 
 // Voices load asynchronously in some browsers.

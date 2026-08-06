@@ -36,7 +36,9 @@ export function dealGame(
   });
   const center = deck.slice(players.length);
 
-  const state: GameState = {
+  // Werewolves only learn each other at deal; center cards are peeked
+  // during their night window (after hunter may have removed one).
+  return {
     nightStartedAt: new Date().toISOString(),
     discussionSeconds,
     originalRoles,
@@ -48,21 +50,6 @@ export function dealGame(
     pendingChain: {},
     votes: {},
   };
-
-  // Werewolves learn each other and the center cards at night start,
-  // before any swap happens (they act first in the timeline).
-  const wolfIds = players
-    .filter((p) => originalRoles[p.id] === "lobisomem")
-    .map((p) => p.id);
-  for (const id of wolfIds) {
-    pushInfo(state, id, {
-      kind: "lobisomens",
-      wolfIds,
-      center: [...center],
-    });
-  }
-
-  return state;
 }
 
 function pushInfo(state: GameState, playerId: string, info: PrivateInfo) {
@@ -72,6 +59,12 @@ function pushInfo(state: GameState, playerId: string, info: PrivateInfo) {
 
 export function elapsedNightSeconds(state: GameState, now = Date.now()): number {
   return (now - new Date(state.nightStartedAt).getTime()) / 1000;
+}
+
+function wolfIdsFrom(state: GameState): string[] {
+  return Object.entries(state.currentRoles)
+    .filter(([, r]) => r === "lobisomem")
+    .map(([id]) => id);
 }
 
 /** Which role is the action for? Used to validate the timeline window. */
@@ -85,6 +78,8 @@ function roleForAction(action: NightAction): Role {
       return "cacador";
     case "vampiro_swap":
       return "vampiro";
+    case "lobisomem_peek":
+      return "lobisomem";
   }
 }
 
@@ -112,8 +107,6 @@ export function applyNightAction(
     throw new ActionError("Esta ação não pertence ao seu papel.");
   }
 
-  // Validate the timeline window. Chained zombie actions happen inside the
-  // zombie window, so validate against the zombie segment in that case.
   const windowRole: Role = isChain ? "zumbi" : actionRole;
   const segment = segmentForRole(windowRole);
   if (segment) {
@@ -124,6 +117,25 @@ export function applyNightAction(
     ) {
       throw new ActionError("Fora da janela de ação do seu papel.");
     }
+  }
+
+  // Werewolf peek is idempotent and does not consume a "choice" slot the
+  // same way — but still marks acted so we only snapshot once.
+  if (action.type === "lobisomem_peek") {
+    if (next.acted[actorId]) {
+      const existing = (next.privateInfo[actorId] ?? []).filter(
+        (i) => i.kind === "lobisomens",
+      );
+      return { state: next, info: existing };
+    }
+    next.acted[actorId] = true;
+    const info: PrivateInfo = {
+      kind: "lobisomens",
+      wolfIds: wolfIdsFrom(next),
+      center: [...next.center],
+    };
+    pushInfo(next, actorId, info);
+    return { state: next, info: [info] };
   }
 
   if (isChain) {
@@ -145,18 +157,16 @@ export function applyNightAction(
       if (idx < 0 || idx >= next.center.length) {
         throw new ActionError("Carta do centro inválida.");
       }
-      const taken = next.center[idx];
-      next.center[idx] = next.currentRoles[actorId];
+      const [taken] = next.center.splice(idx, 1);
       next.currentRoles[actorId] = taken;
       give({ kind: "pegou_centro", index: idx, role: taken });
 
-      // The zombie assumes the new role and performs its action too.
       if (taken === "lobisomem") {
-        // No choice needed: immediately learn wolves + center.
-        const wolfIds = Object.entries(next.currentRoles)
-          .filter(([, r]) => r === "lobisomem")
-          .map(([id]) => id);
-        give({ kind: "lobisomens", wolfIds, center: [...next.center] });
+        give({
+          kind: "lobisomens",
+          wolfIds: wolfIdsFrom(next),
+          center: [...next.center],
+        });
       } else if (ROLES[taken].hasAction && taken !== "zumbi") {
         next.pendingChain[actorId] = taken;
       }
@@ -180,10 +190,13 @@ export function applyNightAction(
       if (idx < 0 || idx >= next.center.length) {
         throw new ActionError("Carta do centro inválida.");
       }
-      const taken = next.center[idx];
-      next.center[idx] = next.currentRoles[actorId];
-      next.currentRoles[actorId] = taken;
-      give({ kind: "pegou_centro", index: idx, role: taken });
+      if (next.hunterHidden) {
+        throw new ActionError("Você já escondeu uma carta.");
+      }
+      const [taken] = next.center.splice(idx, 1);
+      next.hunterHidden = taken;
+      // Hunter keeps their role; they do not see the card.
+      give({ kind: "escondeu_centro", index: idx });
       break;
     }
     case "vampiro_swap": {
@@ -217,6 +230,47 @@ export function teamOf(role: Role): Team {
   return ROLES[role].team;
 }
 
+function baseResult(state: GameState): Omit<GameResult, "deadIds" | "winners"> {
+  return {
+    finalRoles: { ...state.currentRoles },
+    originalRoles: { ...state.originalRoles },
+    center: [...state.center],
+    centerOriginal: [...state.centerOriginal],
+    votes: { ...state.votes },
+    hunterHidden: state.hunterHidden,
+  };
+}
+
+/**
+ * Called when discussion ends. If the hunter hid a werewolf, allies win
+ * immediately (skip voting). Otherwise continue to voting with the card revealed.
+ */
+export function resolveDiscussionEnd(
+  state: GameState,
+):
+  | { kind: "auto_win"; state: GameState; result: GameResult }
+  | { kind: "continue"; state: GameState } {
+  const next: GameState = structuredClone(state);
+  if (next.hunterHidden !== undefined) {
+    next.hunterRevealed = next.hunterHidden;
+  }
+
+  if (next.hunterHidden === "lobisomem") {
+    const result: GameResult = {
+      ...baseResult(next),
+      deadIds: [],
+      winners: "aliados",
+      hunterHidden: next.hunterHidden,
+      hunterAutoWin: true,
+      votes: {},
+    };
+    next.result = result;
+    return { kind: "auto_win", state: next, result };
+  }
+
+  return { kind: "continue", state: next };
+}
+
 /**
  * Resolves the vote. Everyone with the most votes dies (ties: all die).
  * Win priority: mortos-vivos > aliados (wolf died) > lobisomens.
@@ -226,8 +280,9 @@ export function resolveVotes(state: GameState): GameResult {
   for (const target of Object.values(state.votes)) {
     tally[target] = (tally[target] ?? 0) + 1;
   }
-  const max = Math.max(...Object.values(tally));
-  const deadIds = Object.keys(tally).filter((id) => tally[id] === max);
+  const max = Math.max(0, ...Object.values(tally));
+  const deadIds =
+    max === 0 ? [] : Object.keys(tally).filter((id) => tally[id] === max);
 
   const deadRoles = deadIds.map((id) => state.currentRoles[id]);
   let winners: Team;
@@ -240,12 +295,9 @@ export function resolveVotes(state: GameState): GameResult {
   }
 
   return {
+    ...baseResult(state),
     deadIds,
     winners,
-    finalRoles: { ...state.currentRoles },
-    originalRoles: { ...state.originalRoles },
-    center: [...state.center],
-    centerOriginal: [...state.centerOriginal],
-    votes: { ...state.votes },
+    hunterHidden: state.hunterHidden ?? state.hunterRevealed,
   };
 }

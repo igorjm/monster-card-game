@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   apiPost,
@@ -9,6 +9,10 @@ import {
   saveNickname,
 } from "@/lib/client/identity";
 import { usePersistedNickname } from "@/lib/client/usePersistedNickname";
+import {
+  normalizeRoomCode,
+  ROOM_CODE_LENGTH,
+} from "@/lib/client/roomCode";
 import type { RoomView } from "@/lib/api/views";
 import { AppShell } from "@/components/AppShell";
 import { AmbientMusic } from "@/components/AmbientMusic";
@@ -19,14 +23,27 @@ export default function HomePage() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const nickRef = useRef<HTMLInputElement>(null);
+  const codeRef = useRef<HTMLInputElement>(null);
+
+  const normalizedCode = normalizeRoomCode(code);
+  const hasNick = nickname.trim().length > 0;
+  const codeReady = normalizedCode.length === ROOM_CODE_LENGTH;
+  const canCreate = hasNick && busy === null;
+  const canJoin = hasNick && codeReady && busy === null;
 
   async function createRoom() {
+    if (!hasNick) {
+      setError("Digite um apelido para criar a sala.");
+      nickRef.current?.focus();
+      return;
+    }
     setBusy("create");
     setError(null);
     try {
       saveNickname(nickname);
       const view = await apiPost<RoomView>("/api/rooms", {
-        nickname,
+        nickname: nickname.trim(),
         token: getPlayerToken(),
       });
       router.push(`/sala/${view.code}`);
@@ -37,13 +54,23 @@ export default function HomePage() {
   }
 
   async function joinRoom() {
+    if (!hasNick) {
+      setError("Digite um apelido para entrar na sala.");
+      nickRef.current?.focus();
+      return;
+    }
+    if (!codeReady) {
+      setError("O código da sala tem 4 letras.");
+      codeRef.current?.focus();
+      return;
+    }
     setBusy("join");
     setError(null);
     try {
       saveNickname(nickname);
       const view = await apiPost<RoomView>(
-        `/api/rooms/${code.toUpperCase()}/join`,
-        { nickname, token: getPlayerToken() },
+        `/api/rooms/${normalizedCode}/join`,
+        { nickname: nickname.trim(), token: getPlayerToken() },
       );
       router.push(`/sala/${view.code}`);
     } catch (e) {
@@ -70,20 +97,34 @@ export default function HomePage() {
       </h1>
 
       <div className="panel-pixel w-full rounded-lg p-4 sm:p-5">
-        <label className="mb-1 block text-parchment-dim">Seu apelido</label>
+        <label className="mb-1 block text-parchment-dim" htmlFor="home-nick">
+          Seu apelido
+        </label>
         <input
+          id="home-nick"
+          ref={nickRef}
           className="input-pixel rounded-md"
           maxLength={16}
           placeholder="Ex.: Zé do Brejo"
           value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
+          onChange={(e) => {
+            setNickname(e.target.value);
+            setError(null);
+          }}
           autoComplete="nickname"
-          enterKeyHint="done"
+          enterKeyHint="next"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              codeRef.current?.focus();
+            }
+          }}
         />
 
         <button
+          type="button"
           className="btn-pixel mt-4 w-full rounded-md"
-          disabled={!nickname.trim() || busy !== null}
+          disabled={!canCreate}
           onClick={createRoom}
         >
           {busy === "create" ? "Criando..." : "Criar sala"}
@@ -95,22 +136,42 @@ export default function HomePage() {
           <span className="h-[2px] flex-1 bg-night-card" />
         </div>
 
-        <label className="mb-1 block text-parchment-dim">Código da sala</label>
+        <label className="mb-1 block text-parchment-dim" htmlFor="home-code">
+          Código da sala
+        </label>
         <input
-          className="input-pixel rounded-md text-center uppercase tracking-[0.5em]"
-          maxLength={4}
+          id="home-code"
+          ref={codeRef}
+          className="input-pixel rounded-md text-center uppercase tracking-[0.35em]"
+          maxLength={ROOM_CODE_LENGTH}
           placeholder="ABCD"
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          value={normalizedCode}
+          onChange={(e) => {
+            setCode(normalizeRoomCode(e.target.value));
+            setError(null);
+          }}
           autoCapitalize="characters"
           autoCorrect="off"
+          autoComplete="off"
           spellCheck={false}
           inputMode="text"
           enterKeyHint="go"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void joinRoom();
+            }
+          }}
         />
+        {codeReady && !hasNick && (
+          <p className="mt-2 text-center text-sm text-ember">
+            Digite um apelido acima para liberar o botão Entrar
+          </p>
+        )}
         <button
+          type="button"
           className="btn-pixel btn-pixel--swamp mt-4 w-full rounded-md"
-          disabled={!nickname.trim() || code.length !== 4 || busy !== null}
+          disabled={!canJoin}
           onClick={joinRoom}
         >
           {busy === "join" ? "Entrando..." : "Entrar na sala"}

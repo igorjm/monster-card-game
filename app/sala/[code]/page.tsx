@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRoomView } from "@/lib/client/useRoomView";
 import { apiPost, getPlayerToken, saveNickname } from "@/lib/client/identity";
@@ -80,16 +80,23 @@ function NotInRoom({ code, error }: { code: string; error: string }) {
   const { nickname, setNickname } = usePersistedNickname();
   const [busy, setBusy] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const nickRef = useRef<HTMLInputElement>(null);
 
   const canJoin = error === "Você não está nesta sala.";
+  const hasNick = nickname.trim().length > 0;
 
   async function join() {
+    if (!hasNick) {
+      setJoinError("Digite um apelido para entrar.");
+      nickRef.current?.focus();
+      return;
+    }
     setBusy(true);
     setJoinError(null);
     try {
       saveNickname(nickname);
       await apiPost<RoomView>(`/api/rooms/${code.toUpperCase()}/join`, {
-        nickname,
+        nickname: nickname.trim(),
         token: getPlayerToken(),
       });
       window.location.reload();
@@ -106,22 +113,42 @@ function NotInRoom({ code, error }: { code: string; error: string }) {
       </h1>
       {canJoin ? (
         <div className="panel-pixel w-full rounded-lg p-4 sm:p-5">
-          <label className="mb-1 block text-parchment-dim">Seu apelido</label>
+          <label className="mb-1 block text-parchment-dim" htmlFor="join-nick">
+            Seu apelido
+          </label>
           <input
+            id="join-nick"
+            ref={nickRef}
             className="input-pixel rounded-md"
             maxLength={16}
             placeholder="Ex.: Zé do Brejo"
             value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
+            onChange={(e) => {
+              setNickname(e.target.value);
+              setJoinError(null);
+            }}
             autoComplete="nickname"
+            enterKeyHint="go"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void join();
+              }
+            }}
           />
           <button
+            type="button"
             className="btn-pixel mt-4 w-full rounded-md"
-            disabled={!nickname.trim() || busy}
+            disabled={!hasNick || busy}
             onClick={join}
           >
             {busy ? "Entrando..." : "Entrar na sala"}
           </button>
+          {!hasNick && (
+            <p className="mt-2 text-center text-sm text-ember">
+              Digite um apelido para liberar o botão
+            </p>
+          )}
           {joinError && (
             <p className="shake mt-4 text-center text-blood-bright">
               {joinError}
@@ -132,6 +159,7 @@ function NotInRoom({ code, error }: { code: string; error: string }) {
         <p className="text-center text-blood-bright">{error}</p>
       )}
       <button
+        type="button"
         className="btn-pixel btn-pixel--ghost rounded-md"
         onClick={() => router.push("/")}
       >

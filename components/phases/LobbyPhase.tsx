@@ -52,7 +52,11 @@ export function LobbyPhase({
 
   async function copyCode() {
     try {
-      await navigator.clipboard.writeText(view.code);
+      const shareUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/sala/${view.code}`
+          : view.code;
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -71,7 +75,9 @@ export function LobbyPhase({
           {view.code}
         </button>
         <p className="mt-1 text-sm text-parchment-dim">
-          {copied ? "Copiado!" : "Toque para copiar e envie aos amigos"}
+          {copied
+            ? "Link copiado!"
+            : "Toque para copiar o link e envie aos amigos"}
         </p>
       </header>
 

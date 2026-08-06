@@ -22,8 +22,10 @@ function subscribeNoop() {
 }
 
 /**
- * Mobile: offer one-tap install (Android) or guided Add to Home Screen (iOS).
- * Standalone PWA: offer enabling notifications.
+ * Mobile install + standalone notification prompts.
+ *
+ * Android/Chrome: one tap calls beforeinstallprompt → native “Add to Home screen”.
+ * iOS Safari: Apple provides no install API — only Share → Add to Home Screen.
  */
 export function PwaPrompts() {
   const ios = useSyncExternalStore(subscribeNoop, isIos, () => false);
@@ -40,10 +42,21 @@ export function PwaPrompts() {
     const onBip = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BeforeInstallPromptEvent);
+      // Do not open the modal from here — decide() handles timing so we
+      // never cover the join form while someone is typing.
     };
-    window.addEventListener("beforeinstallprompt", onBip);
+    const onInstalled = () => {
+      dismissInstall();
+      setDeferred(null);
+      setKind(null);
+    };
 
-    const timer = window.setTimeout(() => {
+    window.addEventListener("beforeinstallprompt", onBip);
+    window.addEventListener("appinstalled", onInstalled);
+
+    let showTimer: number | undefined;
+
+    const decide = () => {
       if (isStandalone()) {
         const perm = notificationPermission();
         if (
@@ -51,19 +64,52 @@ export function PwaPrompts() {
           !wasNotifDismissed() &&
           "Notification" in window
         ) {
+          // Don't block someone mid-join with the notifications sheet.
+          const tag = document.activeElement?.tagName;
+          if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON") {
+            showTimer = window.setTimeout(decide, 2500);
+            return;
+          }
           setKind("notifications");
         }
         return;
       }
 
-      if (isMobileViewport() && !wasInstallDismissed()) {
-        setKind("install");
+      if (!isMobileViewport() || wasInstallDismissed()) return;
+
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") {
+        // User is typing nickname/code — wait until they're done.
+        showTimer = window.setTimeout(decide, 2500);
+        return;
       }
-    }, 700);
+
+      // iOS: show guided modal (no install API).
+      // Android: prefer waiting briefly for beforeinstallprompt so the CTA can
+      // open the native installer in one tap.
+      if (isIos()) {
+        setKind("install");
+        return;
+      }
+
+      showTimer = window.setTimeout(() => {
+        const active = document.activeElement?.tagName;
+        if (active === "INPUT" || active === "TEXTAREA") {
+          showTimer = window.setTimeout(decide, 2500);
+          return;
+        }
+        setKind("install");
+      }, 2500);
+    };
+
+    // Give time to type nickname + room code before any overlay.
+    const start = window.setTimeout(decide, 8000);
 
     return () => {
-      window.clearTimeout(timer);
+      window.clearTimeout(start);
+      if (showTimer) window.clearTimeout(showTimer);
       window.removeEventListener("beforeinstallprompt", onBip);
+      window.removeEventListener("appinstalled", onInstalled);
     };
   }, []);
 
@@ -80,12 +126,13 @@ export function PwaPrompts() {
           setKind(null);
           return;
         }
-        setStatus("Instalação cancelada. Você pode tentar de novo depois.");
-      } else {
-        setStatus(
-          "Seu navegador não mostrou o instalador ainda. Use o menu → “Instalar app”.",
-        );
+        setStatus("Instalação cancelada. Toque de novo quando quiser.");
+        return;
       }
+
+      setStatus(
+        "O instalador ainda não está pronto. No Chrome: menu ⋮ → “Instalar app” ou “Adicionar à tela inicial”.",
+      );
     } finally {
       setBusy(false);
     }
@@ -142,7 +189,7 @@ export function PwaPrompts() {
 
   if (kind === "install") {
     return (
-      <PixelModal title="INSTALAR APP" onClose={skipInstall}>
+      <PixelModal title="TELA INICIAL" onClose={skipInstall}>
         <div className="flex justify-center">
           <img
             src="/art/logo.png"
@@ -153,14 +200,14 @@ export function PwaPrompts() {
         </div>
         <p className="text-center text-parchment-dim leading-snug">
           {ios
-            ? "Jogue em tela cheia pela tela inicial — mais rápido e sem a barra do Safari."
-            : "Instale o Monstros na tela inicial e jogue como um app, em tela cheia."}
+            ? "No iPhone a Apple não deixa apps adicionarem sozinhas. Use o Safari:"
+            : "Um toque abre o instalador do Chrome e coloca o Monstros na tela inicial — como um app."}
         </p>
         {ios ? (
           <ol className="list-decimal space-y-2 pl-5 text-parchment-dim">
             <li>
-              Toque em <span className="text-ember">Compartilhar</span> (ícone
-              do quadrado com seta)
+              Toque em <span className="text-ember">Compartilhar</span> (quadrado
+              com seta)
             </li>
             <li>
               Escolha{" "}
@@ -181,11 +228,7 @@ export function PwaPrompts() {
             disabled={busy}
             onClick={installApp}
           >
-            {busy
-              ? "Abrindo..."
-              : deferred
-                ? "Adicionar à tela inicial"
-                : "Instalar app"}
+            {busy ? "Abrindo instalador..." : "Adicionar à tela inicial"}
           </button>
         )}
         {ios && (

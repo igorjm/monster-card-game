@@ -288,6 +288,21 @@ export function NightPhase({
         </button>
       )}
 
+      <section className="panel-pixel rounded-lg p-3">
+        <p className="font-title mb-2 text-center text-[0.55rem] text-parchment-dim">
+          CENTRO ({game.centerCount})
+        </p>
+        <div className="flex min-h-14 justify-center gap-2">
+          {game.centerCount === 0 ? (
+            <p className="text-sm text-parchment-dim">Nenhuma carta</p>
+          ) : (
+            Array.from({ length: game.centerCount }, (_, i) => (
+              <CardBack key={`c-${i}`} size="sm" label={`${i + 1}`} />
+            ))
+          )}
+        </div>
+      </section>
+
       <section className="flex flex-col items-center gap-2">
         <p className="text-parchment-dim">Sua carta (toque para mostrar/esconder)</p>
         <PeekCard role={myRole} />
@@ -392,7 +407,9 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
           </p>
           {info.center && info.center.length > 0 ? (
             <>
-              <p className="mb-2 text-parchment-dim">Cartas do centro:</p>
+              <p className="mb-2 text-parchment-dim">
+                Cartas do centro (só agora — memorize!):
+              </p>
               <div className="flex gap-2">
                 {info.center.map((role, i) => (
                   <RoleCard key={i} role={role} size="sm" flip />
@@ -401,7 +418,8 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
             </>
           ) : (
             <p className="text-sm text-parchment-dim">
-              As cartas do centro só podiam ser vistas durante a noite.
+              As cartas do centro só aparecem no turno do lobisomem. Memorize
+              quando virá-las.
             </p>
           )}
         </div>

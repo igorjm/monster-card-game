@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
 import { useNow } from "@/lib/client/useNow";
 import {
@@ -21,6 +21,33 @@ import type { RoomView } from "@/lib/api/views";
 import { CardBack, RoleCard } from "@/components/RoleCard";
 import { PeekCard } from "@/components/PeekCard";
 import { AppShell } from "@/components/AppShell";
+import { HostPauseButton, PausedBanner } from "@/components/HostPauseButton";
+
+const NIGHT_SOUND_KEY = "monstros:night-sound";
+
+function preferredNightSoundOn(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const saved = localStorage.getItem(NIGHT_SOUND_KEY);
+    if (saved === "0") return false;
+    if (saved === "1") return true;
+  } catch {
+    /* private mode */
+  }
+  return true;
+}
+
+function persistNightSoundOn(on: boolean) {
+  try {
+    localStorage.setItem(NIGHT_SOUND_KEY, on ? "1" : "0");
+  } catch {
+    /* private mode */
+  }
+}
+
+function subscribeNoop() {
+  return () => {};
+}
 
 export function NightPhase({
   view,
@@ -33,27 +60,88 @@ export function NightPhase({
 }) {
   const game = view.game!;
   const now = useNow(clockOffsetMs);
-  const elapsed = (now - new Date(game.nightStartedAt).getTime()) / 1000;
+  const effectiveNow = game.pausedAt
+    ? new Date(game.pausedAt).getTime()
+    : now;
+  const elapsed = (effectiveNow - new Date(game.nightStartedAt).getTime()) / 1000;
   const segment = segmentAt(elapsed);
   const subtitle = subtitleAt(elapsed);
+  const paused = game.paused;
 
-  const [soundOn, setSoundOn] = useState(false);
+  const preferredOn = useSyncExternalStore(
+    subscribeNoop,
+    preferredNightSoundOn,
+    () => true,
+  );
+  const [soundOn, setSoundOn] = useState(preferredOn);
+  const [needsGesture, setNeedsGesture] = useState(false);
+  const [hasAudioFile, setHasAudioFile] = useState<boolean | null>(null);
+  /** Bumps to retry autoplay after toggle-on or a user gesture. */
+  const [playToken, setPlayToken] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [hasAudioFile, setHasAudioFile] = useState(false);
   const spokenKeyRef = useRef<string | null>(null);
   const advanceSentRef = useRef(false);
   const wolfPeekSentRef = useRef(false);
 
   useEffect(() => {
-    void checkNightAudio().then(setHasAudioFile);
+    let cancelled = false;
+    void checkNightAudio().then((ok) => {
+      if (!cancelled) setHasAudioFile(ok);
+    });
     return () => {
+      cancelled = true;
       stopSpeaking();
       audioRef.current?.pause();
+      audioRef.current = null;
     };
   }, []);
 
+  // Auto-start narration (default on). Browsers may require one tap — show unlock CTA then.
+  useEffect(() => {
+    if (hasAudioFile === null) return;
+
+    if (!soundOn) {
+      audioRef.current?.pause();
+      stopSpeaking();
+      return;
+    }
+
+    let cancelled = false;
+
+    async function boot() {
+      if (hasAudioFile) {
+        audioRef.current?.pause();
+        const audio = new Audio(nightAudioSrc());
+        audio.preload = "auto";
+        audio.currentTime = Math.max(0, Math.min(elapsed, NIGHT_TOTAL_SECONDS));
+        audioRef.current = audio;
+        if (paused) return;
+        try {
+          await audio.play();
+          if (!cancelled) setNeedsGesture(false);
+        } catch {
+          if (!cancelled) setNeedsGesture(true);
+        }
+        return;
+      }
+      if (segment && !paused) {
+        spokenKeyRef.current = segment.key;
+        speak(segment.narration);
+        if (!cancelled) setNeedsGesture(false);
+      }
+    }
+
+    void boot();
+    return () => {
+      cancelled = true;
+    };
+    // Only when audio availability / preference changes — not every clock tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAudioFile, soundOn, playToken]);
+
   // Werewolves peek the remaining center cards once during their window.
   useEffect(() => {
+    if (paused) return;
     if (game.yourRole !== "lobisomem") return;
     if (segment?.key !== "lobisomem") return;
     if (game.hasActed || wolfPeekSentRef.current) return;
@@ -63,6 +151,7 @@ export function NightPhase({
       action: { type: "lobisomem_peek" },
     }).then(() => refresh());
   }, [
+    paused,
     game.yourRole,
     game.hasActed,
     segment?.key,
@@ -73,46 +162,56 @@ export function NightPhase({
   // Keep the audio playhead aligned with the shared night clock.
   useEffect(() => {
     const audio = audioRef.current;
-    if (!soundOn || !hasAudioFile || !audio || audio.paused) return;
+    if (!soundOn || !hasAudioFile || !audio) return;
+    if (paused) {
+      audio.pause();
+      stopSpeaking();
+      return;
+    }
+    if (audio.paused && !needsGesture) {
+      void audio.play().catch(() => setNeedsGesture(true));
+    }
     if (Math.abs(audio.currentTime - elapsed) > 0.75) {
       audio.currentTime = Math.max(0, Math.min(elapsed, NIGHT_TOTAL_SECONDS));
     }
-  }, [elapsed, soundOn, hasAudioFile]);
+  }, [elapsed, soundOn, hasAudioFile, paused, needsGesture]);
 
   // Narrate each segment once (TTS fallback when no audio file).
   useEffect(() => {
-    if (!soundOn || hasAudioFile || !segment) return;
+    if (paused || !soundOn || hasAudioFile !== false || !segment || needsGesture) {
+      return;
+    }
     if (spokenKeyRef.current === segment.key) return;
     spokenKeyRef.current = segment.key;
     speak(segment.narration);
-  }, [segment, soundOn, hasAudioFile]);
+  }, [segment, soundOn, hasAudioFile, paused, needsGesture]);
 
   // When the night ends, ask the server to advance (idempotent).
   useEffect(() => {
+    if (paused) return;
     if (elapsed >= NIGHT_TOTAL_SECONDS && !advanceSentRef.current) {
       advanceSentRef.current = true;
       void apiPost(`/api/rooms/${view.code}/advance`, {
         token: getPlayerToken(),
       }).then(() => refresh());
     }
-  }, [elapsed, view.code, refresh]);
+  }, [elapsed, view.code, refresh, paused]);
 
-  async function enableSound() {
-    setSoundOn(true);
-    if (hasAudioFile) {
-      const audio = new Audio(nightAudioSrc());
-      audio.preload = "auto";
-      audio.currentTime = Math.max(0, elapsed);
-      audioRef.current = audio;
-      try {
-        await audio.play();
-      } catch {
-        setHasAudioFile(false);
-      }
-    } else if (segment) {
-      spokenKeyRef.current = segment.key;
-      speak(segment.narration);
+  function toggleSound() {
+    const next = !soundOn;
+    setSoundOn(next);
+    persistNightSoundOn(next);
+    if (!next) {
+      setNeedsGesture(false);
+      return;
     }
+    setPlayToken((t) => t + 1);
+  }
+
+  function unlockWithGesture() {
+    setSoundOn(true);
+    persistNightSoundOn(true);
+    setPlayToken((t) => t + 1);
   }
 
   const myRole = game.yourRole;
@@ -124,6 +223,15 @@ export function NightPhase({
       : segment?.key === "zumbi" && myRole === "zumbi" && chainRole
         ? chainRole
         : null;
+
+  // After the witch peeks, keep the card on screen only for the rest of her
+  // night window. Dawn/discussion hide it; results show it again (via filter).
+  const showBruxaReveal =
+    game.hasActed &&
+    !!segment &&
+    ((myRole === "bruxa" && segment.key === "bruxa") ||
+      (myRole === "zumbi" && segment.key === "zumbi" && !chainRole)) &&
+    game.yourInfo.some((i) => i.kind === "viu_jogador");
 
   const progress = Math.min(1, elapsed / NIGHT_TOTAL_SECONDS);
   const caption = displayCaption(subtitle, segment?.narration);
@@ -147,14 +255,30 @@ export function NightPhase({
         {segment?.actorPrompt &&
           segment.key === myRole &&
           ROLES[myRole].hasAction &&
-          !game.hasActed && (
+          !game.hasActed &&
+          !paused && (
             <p className="mt-2 text-sm text-ember">{segment.actorPrompt}</p>
           )}
       </header>
 
-      {!soundOn && (
-        <button className="btn-pixel btn-pixel--ember rounded-md" onClick={enableSound}>
-          Ativar narração
+      <PausedBanner paused={paused} />
+      <HostPauseButton view={view} refresh={refresh} />
+
+      {needsGesture && soundOn ? (
+        <button
+          type="button"
+          className="btn-pixel btn-pixel--ember w-full rounded-md"
+          onClick={unlockWithGesture}
+        >
+          Toque para ouvir a narração
+        </button>
+      ) : (
+        <button
+          type="button"
+          className={`btn-pixel w-full rounded-md ${soundOn ? "btn-pixel--ghost" : "btn-pixel--ember"}`}
+          onClick={toggleSound}
+        >
+          {soundOn ? "Som da noite: ligado" : "Som da noite: mudo"}
         </button>
       )}
 
@@ -163,11 +287,7 @@ export function NightPhase({
         <PeekCard role={myRole} />
       </section>
 
-      {segment && segment.key === myRole && !ROLES[myRole].hasAction && (
-        <NightInfo view={view} highlight />
-      )}
-
-      {activeActionRole && (
+      {activeActionRole && !paused && (
         <ActionPanel
           view={view}
           actionRole={activeActionRole}
@@ -176,9 +296,18 @@ export function NightPhase({
         />
       )}
 
-      {(game.hasActed || myRole === "lobisomem") && (
-        <NightInfo view={view} />
-      )}
+      {showBruxaReveal && <BruxaReveal view={view} />}
+
+      <NightInfo
+        view={view}
+        hideWitchPeek={showBruxaReveal}
+        highlight={
+          !!segment &&
+          segment.key === myRole &&
+          !ROLES[myRole].hasAction &&
+          game.yourInfo.length === 0
+        }
+      />
 
       <p className="mt-auto text-center text-sm text-parchment-dim">
         Não mostre sua tela para ninguém!
@@ -187,16 +316,43 @@ export function NightPhase({
   );
 }
 
+/** Full-size peek result — only while the witch's night window is still open. */
+function BruxaReveal({ view }: { view: RoomView }) {
+  const seen = view.game!.yourInfo.find((i) => i.kind === "viu_jogador");
+  if (!seen || seen.kind !== "viu_jogador") return null;
+  const name =
+    view.players.find((p) => p.id === seen.playerId)?.nickname ?? "???";
+  return (
+    <section className="panel-pixel flex flex-col items-center gap-3 rounded-lg border-ember p-4">
+      <h2 className="font-title text-xs text-ember">VOCÊ ESPIOU</h2>
+      <RoleCard role={seen.role} size="md" flip />
+      <p className="text-center text-parchment">
+        {name} é{" "}
+        <span className="text-ember">{ROLES[seen.role].name}</span>
+      </p>
+      <p className="text-center text-sm text-parchment-dim">
+        Memorize agora — a carta some quando sua vez acabar.
+      </p>
+    </section>
+  );
+}
+
 /** Renders everything this player learned during the night. */
 export function NightInfo({
   view,
   highlight = false,
+  hideWitchPeek = false,
 }: {
   view: RoomView;
   highlight?: boolean;
+  /** Skip bruxa peeks (shown separately during her window / at results). */
+  hideWitchPeek?: boolean;
 }) {
   const game = view.game!;
-  if (game.yourInfo.length === 0) {
+  const infos = hideWitchPeek
+    ? game.yourInfo.filter((i) => i.kind !== "viu_jogador")
+    : game.yourInfo;
+  if (infos.length === 0) {
     if (!highlight) return null;
     return (
       <p className="panel-pixel rounded-lg p-4 text-center text-parchment-dim">
@@ -207,7 +363,7 @@ export function NightInfo({
   return (
     <section className="panel-pixel flex flex-col gap-3 rounded-lg p-4">
       <h2 className="font-title text-xs text-parchment">O QUE VOCÊ VIU</h2>
-      {game.yourInfo.map((info, i) => (
+      {infos.map((info, i) => (
         <InfoLine key={i} info={info} view={view} />
       ))}
     </section>

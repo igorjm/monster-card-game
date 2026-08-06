@@ -125,12 +125,23 @@ npm run dev
 | `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Frontend (só Realtime) |
 | `SUPABASE_SECRET_KEY` | **Somente servidor** — nunca no browser |
+| `LIVEKIT_URL` | WebSocket LiveKit Cloud (`wss://…`) |
+| `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | Tokens de voz (somente servidor) |
 
 ```bash
 npm test          # motor do jogo
 npm run lint
 npm run build
 ```
+
+## Voz na discussão
+
+Durante a discussão, os jogadores entram numa sala de voz **LiveKit** (celular ou
+desktop). Entram mutados e tocam **Falar** para ligar o microfone.
+
+1. Crie um projeto em [LiveKit Cloud](https://cloud.livekit.io).
+2. Copie URL, API Key e API Secret para `.env.local` / Vercel.
+3. Redeploy. Sem essas variáveis, a UI mostra que a voz não está configurada.
 
 ## Áudio da noite
 

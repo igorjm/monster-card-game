@@ -27,11 +27,13 @@ export async function POST(
       if (!game) return {};
 
       if (current.phase === "noite") {
+        if (game.pausedAt) return {};
         if (elapsedNightSeconds(game) < NIGHT_TOTAL_SECONDS - 1) return {};
         return {
           phase: "discussao" as const,
           game: {
             ...game,
+            pausedAt: undefined,
             discussionEndsAt: new Date(
               Date.now() + game.discussionSeconds * 1000,
             ).toISOString(),
@@ -40,6 +42,7 @@ export async function POST(
       }
 
       if (current.phase === "discussao") {
+        if (game.pausedAt && !force) return {};
         const ended =
           game.discussionEndsAt &&
           Date.now() >= new Date(game.discussionEndsAt).getTime() - 1000;
@@ -47,15 +50,17 @@ export async function POST(
         if (!ended && !hostForced) return {};
 
         const outcome = resolveDiscussionEnd(game);
+        const nextGame = { ...outcome.state };
+        delete nextGame.pausedAt;
         if (outcome.kind === "auto_win") {
           return {
             phase: "resultado" as const,
-            game: outcome.state,
+            game: nextGame,
           };
         }
         return {
           phase: "votacao" as const,
-          game: outcome.state,
+          game: nextGame,
         };
       }
 

@@ -6,6 +6,7 @@ import { ROLES, TEAMS } from "@/lib/game/roles";
 import type { RoomView } from "@/lib/api/views";
 import { RoleCard } from "@/components/RoleCard";
 import { AppShell } from "@/components/AppShell";
+import { NightInfo } from "./NightPhase";
 
 export function ResultsPhase({
   view,
@@ -69,6 +70,8 @@ export function ResultsPhase({
           </p>
         </section>
       )}
+
+      <NightInfo view={view} />
 
       <section className="panel-pixel rounded-lg p-4">
         <h2 className="font-title mb-3 text-xs text-blood-bright">

@@ -58,7 +58,44 @@ function pushInfo(state: GameState, playerId: string, info: PrivateInfo) {
 }
 
 export function elapsedNightSeconds(state: GameState, now = Date.now()): number {
-  return (now - new Date(state.nightStartedAt).getTime()) / 1000;
+  const effectiveNow = state.pausedAt
+    ? new Date(state.pausedAt).getTime()
+    : now;
+  return (effectiveNow - new Date(state.nightStartedAt).getTime()) / 1000;
+}
+
+export function isGamePaused(state: GameState): boolean {
+  return Boolean(state.pausedAt);
+}
+
+/**
+ * Freeze or unfreeze the shared night/discussion clock.
+ * On resume, timestamps are shifted forward by the pause duration so timers
+ * and audio stay aligned for every client.
+ */
+export function setGamePaused(
+  state: GameState,
+  paused: boolean,
+  now = Date.now(),
+): GameState {
+  const next = structuredClone(state);
+  if (paused) {
+    if (next.pausedAt) return next;
+    next.pausedAt = new Date(now).toISOString();
+    return next;
+  }
+  if (!next.pausedAt) return next;
+  const pauseMs = now - new Date(next.pausedAt).getTime();
+  next.nightStartedAt = new Date(
+    new Date(next.nightStartedAt).getTime() + pauseMs,
+  ).toISOString();
+  if (next.discussionEndsAt) {
+    next.discussionEndsAt = new Date(
+      new Date(next.discussionEndsAt).getTime() + pauseMs,
+    ).toISOString();
+  }
+  delete next.pausedAt;
+  return next;
 }
 
 function wolfIdsFrom(state: GameState): string[] {
@@ -96,6 +133,9 @@ export function applyNightAction(
   now = Date.now(),
 ): { state: GameState; info: PrivateInfo[] } {
   const next: GameState = structuredClone(state);
+  if (next.pausedAt) {
+    throw new ActionError("A partida está pausada pelo anfitrião.");
+  }
   const actionRole = roleForAction(action);
   const originalRole = next.originalRoles[actorId];
   if (!originalRole) throw new ActionError("Jogador não está na partida.");

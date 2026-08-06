@@ -1,4 +1,5 @@
-import { NIGHT_TOTAL_SECONDS } from "@/lib/game/timeline";
+import { NIGHT_TOTAL_SECONDS, segmentAt } from "../game/timeline";
+import { elapsedNightSeconds } from "../game/engine";
 import type {
   GameResult,
   Phase,
@@ -7,7 +8,7 @@ import type {
   Role,
   Room,
   RoomSettings,
-} from "@/lib/game/types";
+} from "../game/types";
 
 export interface PublicPlayer {
   id: string;
@@ -37,6 +38,10 @@ export interface RoomView {
     yourInfo: PrivateInfo[];
     hasActed: boolean;
     pendingChain?: Role;
+    /** Host froze the shared clock (night audio + timers). */
+    paused: boolean;
+    /** Server timestamp when pause began (for frozen elapsed). */
+    pausedAt?: string;
     centerCount: number;
     votedCount: number;
     yourVote?: string;
@@ -46,22 +51,48 @@ export interface RoomView {
   } | null;
 }
 
-/** Werewolves may only see center cards during the night. */
-function filterPrivateInfo(
+/**
+ * Strip secrets that must not linger on screen:
+ * - Witch peeks (`viu_jogador`): only during her night window, or at results.
+ * - Werewolf center cards: only during night.
+ */
+export function filterPrivateInfo(
   info: PrivateInfo[],
   phase: Phase,
+  opts: {
+    originalRole?: Role;
+    /** Current night timeline key (only relevant while phase === noite). */
+    segmentKey?: string;
+  } = {},
 ): PrivateInfo[] {
-  if (phase === "noite") return info;
-  return info.map((item) => {
-    if (item.kind === "lobisomens") {
-      return { kind: "lobisomens", wolfIds: item.wolfIds };
-    }
-    return item;
-  });
+  const peekAllowed =
+    phase === "resultado" ||
+    (phase === "noite" &&
+      ((opts.segmentKey === "bruxa" && opts.originalRole === "bruxa") ||
+        (opts.segmentKey === "zumbi" && opts.originalRole === "zumbi")));
+
+  let next = peekAllowed
+    ? info
+    : info.filter((item) => item.kind !== "viu_jogador");
+
+  if (phase !== "noite") {
+    next = next.map((item) => {
+      if (item.kind === "lobisomens") {
+        return { kind: "lobisomens", wolfIds: item.wolfIds };
+      }
+      return item;
+    });
+  }
+
+  return next;
 }
 
 export function buildView(room: Room, player: PlayerInfo): RoomView {
   const game = room.game;
+  const nightElapsed = game ? elapsedNightSeconds(game) : 0;
+  const segmentKey =
+    room.phase === "noite" ? segmentAt(nightElapsed)?.key : undefined;
+
   return {
     code: room.code,
     phase: room.phase,
@@ -88,9 +119,15 @@ export function buildView(room: Room, player: PlayerInfo): RoomView {
           yourInfo: filterPrivateInfo(
             game.privateInfo[player.id] ?? [],
             room.phase,
+            {
+              originalRole: game.originalRoles[player.id],
+              segmentKey,
+            },
           ),
           hasActed: !!game.acted[player.id],
           pendingChain: game.pendingChain[player.id],
+          paused: Boolean(game.pausedAt),
+          pausedAt: game.pausedAt,
           centerCount: game.center.length,
           votedCount: Object.keys(game.votes).length,
           yourVote: game.votes[player.id],

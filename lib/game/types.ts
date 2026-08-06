@@ -69,6 +69,11 @@ export interface GameState {
   discussionSeconds: number;
   /** ISO timestamp when discussion ends; set when phase becomes 'discussao'. */
   discussionEndsAt?: string;
+  /**
+   * When set, the shared night/discussion clock is frozen at this instant.
+   * Only the host can toggle pause.
+   */
+  pausedAt?: string;
   originalRoles: Record<string, Role>;
   currentRoles: Record<string, Role>;
   center: Role[];

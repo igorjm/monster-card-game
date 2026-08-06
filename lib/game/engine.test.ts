@@ -4,8 +4,10 @@ import {
   applyNightAction,
   buildDeck,
   dealGame,
+  elapsedNightSeconds,
   resolveDiscussionEnd,
   resolveVotes,
+  setGamePaused,
 } from "./engine";
 import type { GameState, PlayerInfo, Role } from "./types";
 
@@ -291,5 +293,50 @@ describe("resolveVotes", () => {
     state.hunterRevealed = "aldeao";
     const result = resolveVotes(state);
     expect(result.hunterHidden).toBe("aldeao");
+  });
+});
+
+describe("pause / resume", () => {
+  it("freezes night elapsed while paused", () => {
+    const state = fixedState(
+      ["aldeao", "bruxa", "lobisomem"],
+      ["mumia", "aldeao", "esqueleto"],
+    );
+    const t0 = new Date(state.nightStartedAt).getTime();
+    const at20 = t0 + 20_000;
+    expect(elapsedNightSeconds(state, at20)).toBeCloseTo(20, 5);
+
+    const paused = setGamePaused(state, true, at20);
+    expect(paused.pausedAt).toBe(new Date(at20).toISOString());
+    expect(elapsedNightSeconds(paused, at20 + 30_000)).toBeCloseTo(20, 5);
+  });
+
+  it("shifts nightStartedAt forward on resume", () => {
+    const state = fixedState(
+      ["aldeao", "bruxa", "lobisomem"],
+      ["mumia", "aldeao", "esqueleto"],
+    );
+    const t0 = new Date(state.nightStartedAt).getTime();
+    const paused = setGamePaused(state, true, t0 + 10_000);
+    const resumed = setGamePaused(paused, false, t0 + 25_000);
+    expect(resumed.pausedAt).toBeUndefined();
+    // 15s pause → start moved forward; at t0+40s elapsed is still 25s (40-15)
+    expect(elapsedNightSeconds(resumed, t0 + 40_000)).toBeCloseTo(25, 5);
+  });
+
+  it("blocks night actions while paused", () => {
+    const state = fixedState(
+      ["bruxa", "lobisomem", "aldeao"],
+      ["mumia", "aldeao", "esqueleto"],
+    );
+    const paused = setGamePaused(state, true, at(state, 30));
+    expect(() =>
+      applyNightAction(
+        paused,
+        "p1",
+        { type: "bruxa_look", targetPlayerId: "p2" },
+        at(paused, 30),
+      ),
+    ).toThrow(ActionError);
   });
 });

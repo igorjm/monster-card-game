@@ -6,6 +6,8 @@ import { formatSeconds, useNow } from "@/lib/client/useNow";
 import type { RoomView } from "@/lib/api/views";
 import { CardBack } from "@/components/RoleCard";
 import { PeekCard } from "@/components/PeekCard";
+import { HostPauseButton, PausedBanner } from "@/components/HostPauseButton";
+import { DiscussionVoice } from "@/components/DiscussionVoice";
 import { NightInfo } from "./NightPhase";
 import { AppShell } from "@/components/AppShell";
 
@@ -20,22 +22,27 @@ export function DiscussionPhase({
 }) {
   const game = view.game!;
   const now = useNow(clockOffsetMs, 500);
+  const paused = game.paused;
+  const effectiveNow = game.pausedAt
+    ? new Date(game.pausedAt).getTime()
+    : now;
   const endsAt = game.discussionEndsAt
     ? new Date(game.discussionEndsAt).getTime()
-    : now;
-  const remaining = (endsAt - now) / 1000;
+    : effectiveNow;
+  const remaining = (endsAt - effectiveNow) / 1000;
   const advanceSentRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
 
   useEffect(() => {
+    if (paused) return;
     if (remaining <= 0 && !advanceSentRef.current) {
       advanceSentRef.current = true;
       void apiPost(`/api/rooms/${view.code}/advance`, {
         token: getPlayerToken(),
       }).then(() => refresh());
     }
-  }, [remaining, view.code, refresh]);
+  }, [remaining, view.code, refresh, paused]);
 
   async function endEarly() {
     setBusy(true);
@@ -51,7 +58,7 @@ export function DiscussionPhase({
     }
   }
 
-  const urgent = remaining <= 30;
+  const urgent = !paused && remaining <= 30;
 
   return (
     <AppShell className="gap-4">
@@ -66,6 +73,10 @@ export function DiscussionPhase({
           Discutam! Quem fez o quê durante a noite?
         </p>
       </header>
+
+      <PausedBanner paused={paused} />
+      <HostPauseButton view={view} refresh={refresh} />
+      <DiscussionVoice view={view} paused={paused} />
 
       <section className="panel-pixel rounded-lg p-4">
         <p className="mb-2 text-center text-parchment-dim">
@@ -91,14 +102,14 @@ export function DiscussionPhase({
         </p>
       </section>
 
-      <NightInfo view={view} />
+      <NightInfo view={view} hideWitchPeek />
 
       {view.you.isHost && (
         <div className="mt-auto flex flex-col gap-2">
           {!confirmEnd ? (
             <button
               className="btn-pixel btn-pixel--ghost rounded-md"
-              disabled={busy}
+              disabled={busy || paused}
               onClick={() => setConfirmEnd(true)}
             >
               Encerrar discussão (todos concordam)
@@ -119,7 +130,7 @@ export function DiscussionPhase({
                 </button>
                 <button
                   className="btn-pixel flex-1 rounded-md"
-                  disabled={busy}
+                  disabled={busy || paused}
                   onClick={endEarly}
                 >
                   {busy ? "..." : "Sim, encerrar"}

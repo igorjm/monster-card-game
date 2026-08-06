@@ -54,7 +54,7 @@ export interface RoomView {
 /**
  * Strip secrets that must not linger on screen:
  * - Witch peeks (`viu_jogador`): only during her night window, or at results.
- * - Werewolf center cards: only during night.
+ * - Werewolf center cards: only during the lobisomem night window.
  */
 export function filterPrivateInfo(
   info: PrivateInfo[],
@@ -75,7 +75,10 @@ export function filterPrivateInfo(
     ? info
     : info.filter((item) => item.kind !== "viu_jogador");
 
-  if (phase !== "noite") {
+  const wolfCenterAllowed =
+    phase === "noite" && opts.segmentKey === "lobisomem";
+
+  if (!wolfCenterAllowed) {
     next = next.map((item) => {
       if (item.kind === "lobisomens") {
         return { kind: "lobisomens", wolfIds: item.wolfIds };

@@ -45,10 +45,21 @@ describe("filterPrivateInfo", () => {
     ).toEqual([peek]);
   });
 
-  it("strips werewolf center outside night", () => {
+  it("shows werewolf center only during the lobisomem night window", () => {
+    expect(
+      filterPrivateInfo([wolf], "noite", { segmentKey: "lobisomem" }),
+    ).toEqual([wolf]);
+
+    expect(
+      filterPrivateInfo([wolf], "noite", { segmentKey: "bruxa" }),
+    ).toEqual([{ kind: "lobisomens", wolfIds: ["p1", "p3"] }]);
+
+    expect(
+      filterPrivateInfo([wolf], "noite", { segmentKey: "zumbi" }),
+    ).toEqual([{ kind: "lobisomens", wolfIds: ["p1", "p3"] }]);
+
     expect(filterPrivateInfo([wolf], "discussao")).toEqual([
       { kind: "lobisomens", wolfIds: ["p1", "p3"] },
     ]);
-    expect(filterPrivateInfo([wolf], "noite")).toEqual([wolf]);
   });
 });

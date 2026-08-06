@@ -99,7 +99,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="pt-BR"
       className={`${pixelTitle.variable} ${pixelBody.variable} h-full antialiased`}
     >
-      <body className="min-h-dvh flex flex-col bg-night text-parchment font-body">
+      <body
+        className="min-h-dvh flex flex-col bg-night text-parchment font-body"
+        suppressHydrationWarning
+      >
         {children}
         <ServiceWorkerRegister />
         <PwaPrompts />

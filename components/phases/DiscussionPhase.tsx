@@ -95,7 +95,7 @@ export function DiscussionPhase({
       </section>
 
       <section className="flex flex-col items-center gap-2">
-        <p className="text-parchment-dim">Sua carta (segure para espiar)</p>
+        <p className="text-parchment-dim">Sua carta (toque para mostrar/esconder)</p>
         <PeekCard role={game.yourRole} />
         <p className="text-center text-sm text-parchment-dim">
           Lembre-se: seu papel pode ter mudado durante a noite!

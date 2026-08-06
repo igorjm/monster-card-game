@@ -56,20 +56,21 @@ cartas roda **só no servidor** — ninguém vê a carta alheia.
 
 | Papel | Ação |
 | --- | --- |
-| **Lobisomem** | Reconhece os outros lobisomens e vê as 3 cartas do centro |
-| **Zumbi** | Pega uma carta do centro, assume o papel e executa a ação dele |
-| **Vampiro** | Troca a própria carta com a de um jogador ou do centro |
+| **Caçador** | Esconde uma carta do centro **sem olhar**. Se for lobisomem, aliados vencem ao fim da discussão |
 | **Bruxa** | Olha a carta de um jogador |
-| **Caçador** | Pega uma carta do centro e esconde (troca sem revelar aos outros) |
+| **Lobisomem** | Reconhece os outros lobisomens e olha o centro **só de noite** |
+| **Zumbi** | Remove uma carta do centro, assume o papel e executa a ação dele |
+| **Vampiro** | Troca a própria carta com a de um jogador ou do centro |
 | Aldeão / Múmia / Esqueleto | Dormem |
 
 ## Como jogar
 
 1. Alguém **cria a sala** e compartilha o código de 4 letras.
 2. Cada um recebe uma carta secreta; **3 cartas** ficam no centro.
-3. **Noite (~1m40s)** — narração chama cada papel na ordem.
-4. **Discussão (5–10 min)** — blefem, acusem, mentam.
-5. **Votação** — quem tiver mais votos, morre (empate: todos empatados morrem).
+3. **Noite (~1m40s)** — narração chama cada papel na ordem (Caçador → Bruxa → Lobisomem → Zumbi → Vampiro).
+4. **Discussão (5–10 min)** — blefem, acusem, mentam. Cartas removidas somem do centro.
+5. **Revelação do Caçador** — se a carta escondida for lobisomem, aliados vencem na hora.
+6. **Votação** (se não houve vitória do caçador) — quem tiver mais votos, morre.
 
 ### Vitória (cartas finais, após as trocas)
 
@@ -133,10 +134,33 @@ npm run build
 
 ## Áudio da noite
 
-Sem arquivo oficial, a narração usa **síntese de voz pt-BR** do navegador.
+A narração oficial está em [`public/audio/monster.m4a`](public/audio/monster.m4a)
+(~1m38s), com legendas sincronizadas em [`lib/game/timeline.ts`](lib/game/timeline.ts).
 
-1. Coloque o áudio em `public/audio/noite.mp3` (~1m40s).
-2. Ajuste os timestamps em [`lib/game/timeline.ts`](lib/game/timeline.ts).
+Ordem da noite: **Caçador → Bruxa → Lobisomem → Zumbi → Vampiro → amanhecer**.
+
+Se o arquivo sumir, o app cai para síntese de voz pt-BR do navegador.
+
+Música ambiente (lobby / home, em loop baixo):
+[`public/audio/background.mp3`](public/audio/background.mp3) — some quando a
+partida começa.
+
+## PWA (instalar no celular)
+
+O app é uma **Progressive Web App**: manifesto, ícones, tema escuro e service
+worker (`public/sw.js`) com shell offline. Multiplayer ainda precisa de internet;
+a tela `/offline` aparece se a navegação falhar sem rede.
+
+No celular, um popup oferece instalar na tela inicial (Android: botão que abre o
+instalador nativo; iOS: passos do Safari). Ao abrir pelo ícone instalado, outro
+popup oferece ativar notificações.
+
+**iPhone / iPad (Safari):** Compartilhar → *Adicionar à Tela de Início*.  
+**Android (Chrome):** botão do popup ou menu → *Instalar app*.  
+**Desktop (Chrome/Edge):** ícone de instalar na barra de endereço.
+
+No `next dev` o SW não registra (evita conflito com HMR). Use `?sw=1` para
+testar localmente, ou rode `npm run build && npm start`.
 
 ## Deploy
 

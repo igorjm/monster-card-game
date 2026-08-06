@@ -32,8 +32,10 @@ Aplique o schema em [`supabase/schema.sql`](supabase/schema.sql) no seu projeto 
 
 ## Áudio da noite
 
-Coloque o arquivo oficial em `public/audio/noite.mp3` e alinhe os timestamps em
-[`lib/game/timeline.ts`](lib/game/timeline.ts).
+Arquivo oficial: `public/audio/monster.m4a`.
+Legendas e janelas de ação: [`lib/game/timeline.ts`](lib/game/timeline.ts).
+
+Ordem: Caçador → Bruxa → Lobisomem → Zumbi → Vampiro.
 
 ## Aviso legal
 

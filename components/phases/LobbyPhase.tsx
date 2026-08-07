@@ -210,12 +210,13 @@ export function LobbyPhase({
           </li>
           <li>4. Ao amanhecer, discutam: quem é o quê?</li>
           <li>
-            5. No fim da discussão, a carta do Caçador é revelada. Se for
-            lobisomem, os aliados vencem na hora. Senão, todos votam.
+            5. Todos votam. A carta do Caçador só é revelada no resultado.
           </li>
           <li className="text-parchment">
-            Aliados vencem se um lobisomem morrer. Lobisomens vencem se
-            sobreviverem. Mortos-vivos vencem se um deles for o mais votado!
+            Mortos-vivos (múmia/esqueleto) vencem se um deles for o mais votado.
+            Aliados vencem se um lobisomem morrer, ou se o Caçador escondeu um
+            lobisomem e a vila não executou o próprio Caçador. Caso contrário,
+            lobisomens vencem. O Zumbi assume outro papel e em si não vence.
           </li>
           {Object.values(ROLES).map((r) => (
             <li key={r.id}>

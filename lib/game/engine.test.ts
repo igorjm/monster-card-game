@@ -8,6 +8,7 @@ import {
   resolveDiscussionEnd,
   resolveVotes,
   setGamePaused,
+  shouldRestartDebate,
 } from "./engine";
 import type { GameState, PlayerInfo, Role } from "./types";
 
@@ -160,6 +161,21 @@ describe("applyNightAction", () => {
     expect(next.currentRoles.p2).toBe("vampiro");
   });
 
+  it("vampiro cannot swap with the center", () => {
+    const state = fixedState(
+      ["vampiro", "lobisomem", "aldeao"],
+      ["mumia", "bruxa", "zumbi"],
+    );
+    expect(() =>
+      applyNightAction(
+        state,
+        "p1",
+        { type: "vampiro_swap", target: { kind: "center", index: 0 } },
+        at(state, 82),
+      ),
+    ).toThrow(ActionError);
+  });
+
   it("zumbi removes a center card and chains into its action", () => {
     const state = fixedState(
       ["zumbi", "aldeao", "aldeao"],
@@ -253,20 +269,17 @@ describe("applyNightAction", () => {
 });
 
 describe("resolveDiscussionEnd", () => {
-  it("auto-wins for allies when hunter hid a werewolf", () => {
+  it("always continues to voting without revealing the hunter card", () => {
     const state = fixedState(
       ["cacador", "aldeao", "bruxa"],
       ["mumia", "aldeao"],
     );
     state.hunterHidden = "lobisomem";
     const outcome = resolveDiscussionEnd(state);
-    expect(outcome.kind).toBe("auto_win");
-    if (outcome.kind === "auto_win") {
-      expect(outcome.result.winners).toBe("aliados");
-      expect(outcome.result.hunterAutoWin).toBe(true);
-      expect(outcome.result.hunterHidden).toBe("lobisomem");
-      expect(outcome.state.hunterRevealed).toBe("lobisomem");
-    }
+    expect(outcome.kind).toBe("continue");
+    expect(outcome.state.hunterRevealed).toBeUndefined();
+    expect(outcome.state.hunterHidden).toBe("lobisomem");
+    expect(outcome.state.result).toBeUndefined();
   });
 
   it("continues to voting when hunter hid a non-wolf", () => {
@@ -277,9 +290,28 @@ describe("resolveDiscussionEnd", () => {
     state.hunterHidden = "aldeao";
     const outcome = resolveDiscussionEnd(state);
     expect(outcome.kind).toBe("continue");
-    if (outcome.kind === "continue") {
-      expect(outcome.state.hunterRevealed).toBe("aldeao");
-    }
+    expect(outcome.state.hunterRevealed).toBeUndefined();
+    expect(outcome.state.hunterHidden).toBe("aldeao");
+  });
+});
+
+describe("shouldRestartDebate", () => {
+  it("is true when every player received exactly one vote", () => {
+    expect(
+      shouldRestartDebate(
+        { p1: "p2", p2: "p3", p3: "p1" },
+        ["p1", "p2", "p3"],
+      ),
+    ).toBe(true);
+  });
+
+  it("is false when someone has more than one vote", () => {
+    expect(
+      shouldRestartDebate(
+        { p1: "p2", p2: "p1", p3: "p1" },
+        ["p1", "p2", "p3"],
+      ),
+    ).toBe(false);
   });
 });
 
@@ -316,13 +348,54 @@ describe("resolveVotes", () => {
     expect(result.winners).toBe("mortos-vivos");
   });
 
+  it("mortos-vivos beat hunter-hid-wolf", () => {
+    const state = stateWithVotes(["mumia", "cacador", "aldeao"], {
+      p1: "p2",
+      p2: "p1",
+      p3: "p1",
+    });
+    state.hunterHidden = "lobisomem";
+    expect(resolveVotes(state).winners).toBe("mortos-vivos");
+  });
+
+  it("aliados win via hunter-hid-wolf when a non-hunter ally dies", () => {
+    const state = stateWithVotes(["aldeao", "cacador", "bruxa"], {
+      p1: "p2",
+      p2: "p1",
+      p3: "p1",
+    });
+    state.hunterHidden = "lobisomem";
+    expect(resolveVotes(state).winners).toBe("aliados");
+  });
+
+  it("lobisomens win when the caçador dies even if hunter hid a wolf", () => {
+    const state = stateWithVotes(["cacador", "aldeao", "bruxa"], {
+      p1: "p2",
+      p2: "p1",
+      p3: "p1",
+    });
+    state.hunterHidden = "lobisomem";
+    expect(resolveVotes(state).winners).toBe("lobisomens");
+  });
+
+  it("zumbi death does not trigger mortos-vivos", () => {
+    const result = resolveVotes(
+      stateWithVotes(["zumbi", "lobisomem", "aldeao"], {
+        p1: "p2",
+        p2: "p1",
+        p3: "p1",
+      }),
+    );
+    expect(result.winners).toBe("lobisomens");
+  });
+
   it("includes hunter reveal on the result", () => {
     const state = stateWithVotes(["cacador", "lobisomem", "aldeao"], {
       p1: "p2",
       p2: "p3",
       p3: "p2",
     });
-    state.hunterRevealed = "aldeao";
+    state.hunterHidden = "aldeao";
     const result = resolveVotes(state);
     expect(result.hunterHidden).toBe("aldeao");
   });

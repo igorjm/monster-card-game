@@ -8,7 +8,7 @@ export type Role =
   | "zumbi"
   | "vampiro";
 
-export type Team = "aliados" | "lobisomens" | "mortos-vivos";
+export type Team = "aliados" | "lobisomens" | "mortos-vivos" | "zumbi";
 
 export type Phase = "lobby" | "noite" | "discussao" | "votacao" | "resultado";
 
@@ -61,8 +61,6 @@ export interface GameResult {
   votes: Record<string, string>;
   /** Card the hunter hid, revealed at end of discussion. */
   hunterHidden?: Role;
-  /** Allies won because the hunter's hidden card was a werewolf. */
-  hunterAutoWin?: boolean;
 }
 
 export interface GameState {
@@ -83,8 +81,8 @@ export interface GameState {
   /** Card removed by the hunter, unseen until discussion ends. */
   hunterHidden?: Role;
   /**
-   * Public reveal after discussion (same as hunterHidden once revealed).
-   * Set when leaving discussao so voting screens can show it.
+   * Public reveal after voting (same as hunterHidden once results land).
+   * Kept secret during discussion and voting.
    */
   hunterRevealed?: Role;
   /** Private night info per player id. */

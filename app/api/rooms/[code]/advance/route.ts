@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 /**
  * POST /api/rooms/[code]/advance — Body: { token, force? }
  * Moves noite -> discussao when the night timer ends, and
- * discussao -> votacao (or resultado if hunter hid a werewolf).
+ * discussao -> votacao (always; hunter card stays secret until results).
  * The host may pass force=true to end the discussion early.
  */
 export async function POST(
@@ -52,12 +52,6 @@ export async function POST(
         const outcome = resolveDiscussionEnd(game);
         const nextGame = { ...outcome.state };
         delete nextGame.pausedAt;
-        if (outcome.kind === "auto_win") {
-          return {
-            phase: "resultado" as const,
-            game: nextGame,
-          };
-        }
         return {
           phase: "votacao" as const,
           game: nextGame,

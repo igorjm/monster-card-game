@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
-import { ROLES } from "@/lib/game/roles";
 import type { RoomView } from "@/lib/api/views";
-import { CardBack, RoleCard } from "@/components/RoleCard";
+import { CardBack } from "@/components/RoleCard";
 import { AppShell } from "@/components/AppShell";
 
 export function VotingPhase({
@@ -21,7 +20,6 @@ export function VotingPhase({
 
   const voted = !!game.yourVote;
   const targets = view.players.filter((p) => p.id !== view.you.id);
-  const hunterRevealed = game.hunterRevealed;
 
   async function vote() {
     if (!selected) return;
@@ -52,18 +50,10 @@ export function VotingPhase({
         <p className="font-title mt-2 text-xs text-parchment">
           {game.votedCount}/{view.players.length} VOTARAM
         </p>
+        <p className="mt-2 text-sm text-parchment-dim">
+          A carta do Caçador só é revelada no resultado.
+        </p>
       </header>
-
-      {hunterRevealed && (
-        <section className="panel-pixel flex flex-col items-center gap-2 rounded-lg border-ember p-4">
-          <p className="font-title text-xs text-ember">O CAÇADOR REVELOU</p>
-          <RoleCard role={hunterRevealed} size="sm" flip />
-          <p className="text-center text-parchment">
-            A carta escondida era{" "}
-            <span className="text-ember">{ROLES[hunterRevealed].name}</span>
-          </p>
-        </section>
-      )}
 
       <div className="scroll-cards flex justify-start gap-3 overflow-x-auto pb-1 sm:flex-wrap sm:justify-center">
         {targets.map((p) => {

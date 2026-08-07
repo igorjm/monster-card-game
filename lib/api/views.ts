@@ -135,9 +135,7 @@ export function buildView(room: Room, player: PlayerInfo): RoomView {
           votedCount: Object.keys(game.votes).length,
           yourVote: game.votes[player.id],
           hunterRevealed:
-            room.phase === "votacao" || room.phase === "resultado"
-              ? game.hunterRevealed
-              : undefined,
+            room.phase === "resultado" ? game.hunterRevealed : undefined,
           result: room.phase === "resultado" ? game.result : undefined,
         }
       : null,

@@ -36,7 +36,8 @@ cartas roda **só no servidor** — ninguém vê a carta alheia.
 | --- | --- |
 | **Aliados** | Aldeão, Bruxa, Caçador, Vampiro |
 | **Lobisomens** | Lobisomem (1 ou 2, conforme o número de jogadores) |
-| **Mortos-vivos** | Zumbi, Múmia, Esqueleto |
+| **Mortos-vivos** | Múmia, Esqueleto |
+| **Zumbi** | Zumbi (assume outro papel à noite — em si não vence) |
 
 ### Baralho por número de jogadores (n + 3 no centro)
 
@@ -54,27 +55,30 @@ cartas roda **só no servidor** — ninguém vê a carta alheia.
 
 | Papel | Ação |
 | --- | --- |
-| **Caçador** | Esconde uma carta do centro **sem olhar**. Se for lobisomem, aliados vencem ao fim da discussão |
+| **Caçador** | Esconde uma carta do centro **sem olhar**. Se for lobisomem, isso só conta **depois** da votação (ver vitória) |
 | **Bruxa** | Olha a carta de um jogador |
 | **Lobisomem** | Reconhece os outros lobisomens e olha o centro **só no turno dele** (depois vira de novo) |
 | **Zumbi** | Remove uma carta do centro, assume o papel e executa a ação dele |
-| **Vampiro** | Troca a própria carta com a de um jogador ou do centro |
+| **Vampiro** | Troca a própria carta com a de **outro jogador** em segredo (o alvo não sabe) |
 | Aldeão / Múmia / Esqueleto | Dormem |
 
 ## Como jogar
 
 1. Alguém **cria a sala** e compartilha o código de 4 letras.
 2. Cada um recebe uma carta secreta; **3 cartas** ficam no centro.
-3. **Noite (~1m40s)** — narração chama cada papel na ordem (Caçador → Bruxa → Lobisomem → Zumbi → Vampiro).
+3. **Noite (~1m40s)** — narração chama cada papel na ordem (Caçador → Bruxa → Lobisomem → Zumbi → Vampiro). O centro só aparece quando alguém age.
 4. **Discussão (5–10 min)** — blefem, acusem, mentam. Cartas removidas somem do centro.
-5. **Revelação do Caçador** — se a carta escondida for lobisomem, aliados vencem na hora.
-6. **Votação** (se não houve vitória do caçador) — quem tiver mais votos, morre.
+5. **Votação** — quem tiver mais votos, morre. Empate: todos com o máximo morrem. Se cada jogador receber exatamente 1 voto, a discussão recomeça.
+6. **Resultado** — a carta do Caçador é revelada e o time vencedor é anunciado.
 
 ### Vitória (cartas finais, após as trocas)
 
-- Um **morto-vivo** morreu → Mortos-vivos vencem  
-- Um **lobisomem** morreu → Aliados vencem  
-- Caso contrário → Lobisomens vencem  
+1. Um **morto-vivo** (múmia ou esqueleto) morreu → Mortos-vivos vencem (mesmo se o Caçador escondeu lobisomem)  
+2. Um **lobisomem** morreu → Aliados vencem  
+3. O Caçador escondeu um **lobisomem** e a vila **não** executou o Caçador → Aliados vencem  
+4. Caso contrário → Lobisomens vencem (inclui executar o próprio Caçador)  
+
+O **Zumbi** em si nunca vence — só o papel que ele assumiu à noite.
 
 ## Stack
 

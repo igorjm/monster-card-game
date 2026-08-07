@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ApiError, findPlayerByToken, updateRoom } from "@/lib/api/room-store";
 import { errorResponse } from "@/lib/api/respond";
 import { buildView } from "@/lib/api/views";
-import { resolveVotes } from "@/lib/game/engine";
+import { resolveVotes, shouldRestartDebate } from "@/lib/game/engine";
 
 export const runtime = "nodejs";
 
@@ -35,13 +35,35 @@ export async function POST(
       const everyoneVoted = current.players.every((p) => votes[p.id]);
       const next = { ...game, votes };
 
-      if (everyoneVoted) {
+      if (!everyoneVoted) {
+        return { game: next };
+      }
+
+      const playerIds = current.players.map((p) => p.id);
+      if (shouldRestartDebate(votes, playerIds)) {
+        // Rule sheet: every player got exactly one vote → restart debate.
         return {
-          phase: "resultado" as const,
-          game: { ...next, result: resolveVotes(next) },
+          phase: "discussao" as const,
+          game: {
+            ...next,
+            votes: {},
+            pausedAt: undefined,
+            discussionEndsAt: new Date(
+              Date.now() + next.discussionSeconds * 1000,
+            ).toISOString(),
+          },
         };
       }
-      return { game: next };
+
+      return {
+        phase: "resultado" as const,
+        game: {
+          ...next,
+          // Reveal the hunter card only with the final results.
+          hunterRevealed: next.hunterHidden,
+          result: resolveVotes(next),
+        },
+      };
     });
 
     const player = findPlayerByToken(room, token);

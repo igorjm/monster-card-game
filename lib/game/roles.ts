@@ -30,7 +30,7 @@ export const ROLES: Record<Role, RoleMeta> = {
     letter: "C",
     team: "aliados",
     description:
-      "Durante a noite, esconde uma carta do centro sem olhar. Se for um lobisomem, os aliados vencem ao amanhecer da discussão.",
+      "Durante a noite, esconde uma carta do centro sem olhar. Se for lobisomem, isso só ajuda os aliados depois da votação (e não se a vila executar o próprio Caçador ou um morto-vivo).",
     nightHint: "Escolha uma carta do centro para esconder — você não pode olhar!",
     art: "/art/cacador.png",
     hasAction: true,
@@ -82,9 +82,9 @@ export const ROLES: Record<Role, RoleMeta> = {
     id: "zumbi",
     name: "Zumbi",
     letter: "Z",
-    team: "mortos-vivos",
+    team: "zumbi",
     description:
-      "Morto-vivo. Remove uma carta do centro, assume o papel dela e faz a ação do novo papel. A carta some do centro.",
+      "Zumbi. Remove uma carta do centro, assume o papel dela e faz a ação do novo papel. A carta some do centro. O Zumbi em si nunca vence — só o papel que ele assume.",
     nightHint: "Escolha uma carta do centro para devorar e assumir.",
     art: "/art/zumbi.png",
     hasAction: true,
@@ -95,8 +95,8 @@ export const ROLES: Record<Role, RoleMeta> = {
     letter: "V",
     team: "aliados",
     description:
-      "Troca sua carta com a de um jogador ou do centro e assume o novo papel.",
-    nightHint: "Escolha uma carta do centro ou de um jogador para trocar.",
+      "Troca sua carta com a de outro jogador em segredo. O alvo não sabe que foi trocado.",
+    nightHint: "Escolha um jogador para trocar de carta — ele não saberá.",
     art: "/art/vampiro.png",
     hasAction: true,
   },
@@ -113,7 +113,11 @@ export const TEAMS: Record<Team, { name: string; goal: string }> = {
   },
   "mortos-vivos": {
     name: "Mortos-Vivos",
-    goal: "Confundam a todos e façam a vila votar em um morto-vivo.",
+    goal: "Confundam a todos e façam a vila votar em um morto-vivo (múmia ou esqueleto).",
+  },
+  zumbi: {
+    name: "Zumbi",
+    goal: "Assuma outro papel à noite — o Zumbi em si não vence.",
   },
 };
 

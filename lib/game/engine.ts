@@ -238,23 +238,20 @@ export function applyNightAction(
     }
     case "vampiro_swap": {
       const target = action.target;
-      let newRole: Role;
       if (target.kind === "center") {
-        if (target.index < 0 || target.index >= next.center.length) {
-          throw new ActionError("Carta do centro inválida.");
-        }
-        newRole = next.center[target.index];
-        next.center[target.index] = next.currentRoles[actorId];
-      } else {
-        if (target.playerId === actorId) {
-          throw new ActionError("Você não pode trocar consigo mesmo.");
-        }
-        const targetRole = next.currentRoles[target.playerId];
-        if (!targetRole) throw new ActionError("Jogador alvo inválido.");
-        newRole = targetRole;
-        next.currentRoles[target.playerId] = next.currentRoles[actorId];
+        throw new ActionError(
+          "O vampiro só troca com outro jogador (não com o centro).",
+        );
       }
+      if (target.playerId === actorId) {
+        throw new ActionError("Você não pode trocar consigo mesmo.");
+      }
+      const targetRole = next.currentRoles[target.playerId];
+      if (!targetRole) throw new ActionError("Jogador alvo inválido.");
+      const newRole = targetRole;
+      next.currentRoles[target.playerId] = next.currentRoles[actorId];
       next.currentRoles[actorId] = newRole;
+      // Only the vampire learns the swap — the target stays unaware.
       give({ kind: "trocou", target, newRole });
       break;
     }
@@ -279,38 +276,41 @@ function baseResult(state: GameState): Omit<GameResult, "deadIds" | "winners"> {
 }
 
 /**
- * Called when discussion ends. If the hunter hid a werewolf, allies win
- * immediately (skip voting). Otherwise continue to voting with the card revealed.
+ * Called when discussion ends. Always continue to voting — the hunter's
+ * hidden card stays secret until after the vote (results).
  */
 export function resolveDiscussionEnd(
   state: GameState,
-):
-  | { kind: "auto_win"; state: GameState; result: GameResult }
-  | { kind: "continue"; state: GameState } {
-  const next: GameState = structuredClone(state);
-  if (next.hunterHidden !== undefined) {
-    next.hunterRevealed = next.hunterHidden;
-  }
+): { kind: "continue"; state: GameState } {
+  return { kind: "continue", state: structuredClone(state) };
+}
 
-  if (next.hunterHidden === "lobisomem") {
-    const result: GameResult = {
-      ...baseResult(next),
-      deadIds: [],
-      winners: "aliados",
-      hunterHidden: next.hunterHidden,
-      hunterAutoWin: true,
-      votes: {},
-    };
-    next.result = result;
-    return { kind: "auto_win", state: next, result };
+/**
+ * True when every seated player received exactly one vote (total votes ==
+ * player count and every tally is 1). Rule sheet: restart the debate.
+ */
+export function shouldRestartDebate(
+  votes: Record<string, string>,
+  playerIds: string[],
+): boolean {
+  if (playerIds.length === 0) return false;
+  if (Object.keys(votes).length !== playerIds.length) return false;
+  const tally: Record<string, number> = {};
+  for (const target of Object.values(votes)) {
+    tally[target] = (tally[target] ?? 0) + 1;
   }
-
-  return { kind: "continue", state: next };
+  if (Object.keys(tally).length !== playerIds.length) return false;
+  return playerIds.every((id) => tally[id] === 1);
 }
 
 /**
  * Resolves the vote. Everyone with the most votes dies (ties: all die).
- * Win priority: mortos-vivos > aliados (wolf died) > lobisomens.
+ * Win priority (option C):
+ * 1. Dead mumia/esqueleto → mortos-vivos (beats hunter-hid-wolf)
+ * 2. Dead lobisomem → aliados
+ * 3. Hunter hid lobisomem and no dead cacador → aliados
+ * 4. Else → lobisomens (incl. voted the caçador)
+ * Zumbi never triggers a win team.
  */
 export function resolveVotes(state: GameState): GameResult {
   const tally: Record<string, number> = {};
@@ -322,10 +322,15 @@ export function resolveVotes(state: GameState): GameResult {
     max === 0 ? [] : Object.keys(tally).filter((id) => tally[id] === max);
 
   const deadRoles = deadIds.map((id) => state.currentRoles[id]);
+  const hunterHidWolf = state.hunterHidden === "lobisomem";
+  const deadHunter = deadRoles.some((r) => r === "cacador");
+
   let winners: Team;
   if (deadRoles.some((r) => teamOf(r) === "mortos-vivos")) {
     winners = "mortos-vivos";
   } else if (deadRoles.some((r) => r === "lobisomem")) {
+    winners = "aliados";
+  } else if (hunterHidWolf && !deadHunter) {
     winners = "aliados";
   } else {
     winners = "lobisomens";
@@ -335,6 +340,6 @@ export function resolveVotes(state: GameState): GameResult {
     ...baseResult(state),
     deadIds,
     winners,
-    hunterHidden: state.hunterHidden ?? state.hunterRevealed,
+    hunterHidden: state.hunterHidden,
   };
 }

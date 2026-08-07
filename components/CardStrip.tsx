@@ -80,7 +80,7 @@ export function CardStrip({ children }: { children: ReactNode }) {
       onPointerCancel={endDrag}
       onDragStart={(e) => e.preventDefault()}
     >
-      <div className="flex w-max gap-2 pr-2">{children}</div>
+      <div className="flex w-max gap-3 pr-2">{children}</div>
     </div>
   );
 }

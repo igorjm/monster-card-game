@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
 import { leaveRoom } from "@/lib/client/leaveRoom";
 import { shutdownLiveKitMedia } from "@/lib/client/livekitMedia";
 import { buildDeck } from "@/lib/game/engine";
-import { ROLES } from "@/lib/game/roles";
+import { ROLES, TEAMS } from "@/lib/game/roles";
 import { MIN_PLAYERS, type Role } from "@/lib/game/types";
 import type { RoomView } from "@/lib/api/views";
 import { RoleCard } from "@/components/RoleCard";
@@ -19,6 +19,18 @@ const DISCUSSION_OPTIONS = [
   { seconds: 600, label: "10 min" },
 ];
 
+function useFineHover(): boolean {
+  const [fine, setFine] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const sync = () => setFine(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return fine;
+}
+
 export function LobbyPhase({
   view,
   refresh,
@@ -27,6 +39,7 @@ export function LobbyPhase({
   refresh: () => Promise<void>;
 }) {
   const router = useRouter();
+  const fineHover = useFineHover();
   const [discussionSeconds, setDiscussionSeconds] = useState(
     view.settings.discussionSeconds,
   );
@@ -34,6 +47,10 @@ export function LobbyPhase({
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [inspected, setInspected] = useState<{
+    role: Role;
+    index: number;
+  } | null>(null);
 
   const enoughPlayers = view.players.length >= MIN_PLAYERS;
   // Stable preview (mumia when 3–4 would randomize mumia/esqueleto).
@@ -132,16 +149,69 @@ export function LobbyPhase({
         )}
       </section>
 
-      <section className="panel-pixel min-w-0 rounded-lg p-4">
-        <h2 className="font-title mb-3 text-xs text-parchment">
+      <section className="panel-pixel min-w-0 rounded-lg p-4 sm:p-5">
+        <h2 className="font-title mb-4 text-xs text-parchment">
           CARTAS NA PARTIDA ({rolesInGame.length})
         </h2>
-        <CardStrip>
-          {rolesInGame.map((role, i) => (
-            <RoleCard key={`${role}-${i}`} role={role} size="sm" />
-          ))}
-        </CardStrip>
-        <p className="mt-2 text-sm text-parchment-dim">
+        <div
+          onMouseLeave={() => {
+            if (fineHover) setInspected(null);
+          }}
+        >
+          <CardStrip>
+            {rolesInGame.map((role, i) => {
+              const selected = inspected?.index === i;
+              return (
+                <button
+                  key={`${role}-${i}`}
+                  type="button"
+                  aria-pressed={selected}
+                  aria-label={`${ROLES[role].name}. ${fineHover ? "Passe o mouse para ver a ação." : "Toque para ver a ação."}`}
+                  className={`shrink-0 rounded-lg p-0.5 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ember ${
+                    selected ? "scale-[1.04]" : "active:scale-95"
+                  }`}
+                  onMouseEnter={() => {
+                    if (fineHover) setInspected({ role, index: i });
+                  }}
+                  onFocus={() => setInspected({ role, index: i })}
+                  onClick={() => {
+                    if (fineHover) {
+                      setInspected({ role, index: i });
+                      return;
+                    }
+                    setInspected((cur) =>
+                      cur?.index === i ? null : { role, index: i },
+                    );
+                  }}
+                >
+                  <div
+                    className={
+                      selected
+                        ? "rounded-lg ring-2 ring-ember ring-offset-2 ring-offset-grave"
+                        : undefined
+                    }
+                  >
+                    <RoleCard role={role} size="sm" />
+                  </div>
+                </button>
+              );
+            })}
+          </CardStrip>
+          {inspected ? (
+            <RoleActionPanel
+              role={inspected.role}
+              dismissible={!fineHover}
+              onClose={() => setInspected(null)}
+            />
+          ) : (
+            <p className="mt-4 text-center text-sm leading-snug text-parchment-dim">
+              {fineHover
+                ? "Passe o mouse numa carta para ver a ação"
+                : "Toque numa carta para ver a ação"}
+            </p>
+          )}
+        </div>
+        <p className="mt-4 text-sm leading-snug text-parchment-dim">
           {view.players.length >= MIN_PLAYERS ? view.players.length : MIN_PLAYERS}{" "}
           jogadores + 3 cartas no centro · arraste para ver todas
         </p>
@@ -226,5 +296,61 @@ export function LobbyPhase({
         </ul>
       </details>
     </AppShell>
+  );
+}
+
+/** Pixel panel under the deck strip — hover on desktop, tap on mobile. */
+function RoleActionPanel({
+  role,
+  dismissible,
+  onClose,
+}: {
+  role: Role;
+  dismissible: boolean;
+  onClose: () => void;
+}) {
+  const meta = ROLES[role];
+  const team = TEAMS[meta.team];
+  return (
+    <div
+      className="panel-pixel mt-4 rounded-lg border-ember px-4 py-4 animate-[card-flip-in_0.28s_steps(4)_both]"
+      role="region"
+      aria-label={`Ação de ${meta.name}`}
+    >
+      <div className="flex items-start gap-4">
+        <div className="shrink-0">
+          <RoleCard role={role} size="sm" />
+        </div>
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-title text-[0.7rem] leading-tight text-ember">
+                {meta.name.toUpperCase()}
+              </p>
+              <p className="mt-1 text-sm text-parchment-dim">{team.name}</p>
+            </div>
+            {dismissible && (
+              <button
+                type="button"
+                className="font-title shrink-0 rounded border-2 border-night-card px-2.5 py-1 text-[0.45rem] text-parchment-dim active:scale-95"
+                onClick={onClose}
+                aria-label="Fechar"
+              >
+                FECHAR
+              </button>
+            )}
+          </div>
+          <p className="text-sm leading-relaxed text-parchment">
+            {meta.description}
+          </p>
+          <p className="border-t-2 border-night-card pt-2.5 text-sm leading-relaxed text-parchment-dim">
+            <span className="font-title text-[0.5rem] tracking-wide text-ember">
+              À NOITE
+            </span>
+            <span className="mt-1 block">{meta.nightHint}</span>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }

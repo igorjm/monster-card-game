@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ApiError, findPlayerByToken, updateRoom } from "@/lib/api/room-store";
 import { errorResponse } from "@/lib/api/respond";
 import { buildView } from "@/lib/api/views";
+import { refreshAllLobbyPresence } from "@/lib/api/lobby-presence";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,13 @@ export async function POST(
       if (current.phase !== "resultado") {
         throw new ApiError("A partida ainda não terminou.");
       }
-      return { phase: "lobby" as const, game: null };
+      // Refresh presence for every seat — lastSeenAt freezes mid-match, and
+      // the first lobby view poll would otherwise prune the table as stale.
+      return {
+        phase: "lobby" as const,
+        game: null,
+        players: refreshAllLobbyPresence(current.players),
+      };
     });
 
     const player = findPlayerByToken(room, token);

@@ -18,6 +18,15 @@ export function pickHostId(players: PlayerInfo[]): string {
   )[0]!.id;
 }
 
+/** Refresh every seat's lobby presence (e.g. after returning from a match). */
+export function refreshAllLobbyPresence(
+  players: PlayerInfo[],
+  nowMs: number = Date.now(),
+): PlayerInfo[] {
+  const nowIso = new Date(nowMs).toISOString();
+  return players.map((p) => ({ ...p, lastSeenAt: nowIso }));
+}
+
 /**
  * Remove a player from a lobby. Returns `null` when the room should be deleted
  * (no one left). Mid-game: no-op patch.

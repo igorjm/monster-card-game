@@ -288,21 +288,6 @@ export function NightPhase({
         </button>
       )}
 
-      <section className="panel-pixel rounded-lg p-3">
-        <p className="font-title mb-2 text-center text-[0.55rem] text-parchment-dim">
-          CENTRO ({game.centerCount})
-        </p>
-        <div className="flex min-h-14 justify-center gap-2">
-          {game.centerCount === 0 ? (
-            <p className="text-sm text-parchment-dim">Nenhuma carta</p>
-          ) : (
-            Array.from({ length: game.centerCount }, (_, i) => (
-              <CardBack key={`c-${i}`} size="sm" label={`${i + 1}`} />
-            ))
-          )}
-        </div>
-      </section>
-
       <section className="flex flex-col items-center gap-2">
         <p className="text-parchment-dim">Sua carta (toque para mostrar/esconder)</p>
         <PeekCard role={myRole} />
@@ -462,7 +447,8 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
               ? nameOf(info.target.playerId)
               : "o centro"}{" "}
             e agora é{" "}
-            <span className="text-ember">{ROLES[info.newRole].name}</span>!
+            <span className="text-ember">{ROLES[info.newRole].name}</span>. O
+            alvo não sabe.
           </p>
         </div>
       );
@@ -629,36 +615,12 @@ function VampireTargetPicker({
   busy: boolean;
   onPick: (target: SwapTarget) => void;
 }) {
-  const [mode, setMode] = useState<"center" | "player">("player");
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex gap-2">
-        <button
-          className={`btn-pixel flex-1 rounded-md ${mode === "player" ? "btn-pixel--ember" : "btn-pixel--ghost"}`}
-          onClick={() => setMode("player")}
-        >
-          Jogador
-        </button>
-        <button
-          className={`btn-pixel flex-1 rounded-md ${mode === "center" ? "btn-pixel--ember" : "btn-pixel--ghost"}`}
-          onClick={() => setMode("center")}
-        >
-          Centro
-        </button>
-      </div>
-      {mode === "player" ? (
-        <PlayerPicker
-          view={view}
-          busy={busy}
-          onPick={(id) => onPick({ kind: "player", playerId: id })}
-        />
-      ) : (
-        <CenterPicker
-          count={view.game!.centerCount}
-          busy={busy}
-          onPick={(i) => onPick({ kind: "center", index: i })}
-        />
-      )}
-    </div>
+    <PlayerPicker
+      view={view}
+      busy={busy}
+      confirmLabel="Trocar em segredo"
+      onPick={(id) => onPick({ kind: "player", playerId: id })}
+    />
   );
 }

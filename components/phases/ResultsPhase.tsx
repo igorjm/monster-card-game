@@ -43,7 +43,7 @@ export function ResultsPhase({
   }
 
   return (
-    <AppShell wide className="gap-5">
+    <AppShell wide flushTop className="gap-5">
       <header className="text-center">
         <h1
           className={`font-title text-lg ${youWon ? "text-swamp-bright" : "text-blood-bright"}`}

@@ -14,6 +14,7 @@ import { VotingPhase } from "@/components/phases/VotingPhase";
 import { ResultsPhase } from "@/components/phases/ResultsPhase";
 import { AppShell } from "@/components/AppShell";
 import { AmbientMusic } from "@/components/AmbientMusic";
+import { DiscussionVoice } from "@/components/DiscussionVoice";
 
 export default function RoomPage({
   params,
@@ -46,31 +47,52 @@ export default function RoomPage({
     );
   }
 
+  // Keep one A/V session mounted across discussion → vote → results → lobby.
+  // Unmounts (and shuts down) only when the next night starts.
+  const voicePaused =
+    view.phase === "discussao" && Boolean(view.game?.paused);
+  const voiceWide = view.phase === "lobby" || view.phase === "resultado";
+  const voiceWidth = voiceWide
+    ? "max-w-md md:max-w-lg lg:max-w-xl"
+    : "max-w-md md:max-w-lg";
+
   return (
     <>
       <AmbientMusic active={beforeMatch} />
-      {view.phase === "lobby" && (
-        <LobbyPhase view={view} refresh={refresh} />
-      )}
-      {view.phase === "noite" && (
+      {view.phase === "noite" ? (
         <NightPhase
           view={view}
           clockOffsetMs={clockOffsetMs}
           refresh={refresh}
         />
-      )}
-      {view.phase === "discussao" && (
-        <DiscussionPhase
-          view={view}
-          clockOffsetMs={clockOffsetMs}
-          refresh={refresh}
-        />
-      )}
-      {view.phase === "votacao" && (
-        <VotingPhase view={view} refresh={refresh} />
-      )}
-      {view.phase === "resultado" && (
-        <ResultsPhase view={view} refresh={refresh} />
+      ) : (
+        <div className="flex min-h-dvh w-full flex-1 flex-col">
+          <div
+            className={`mx-auto w-full min-w-0 shrink-0 ${voiceWidth} pt-[max(1.25rem,env(safe-area-inset-top))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))]`}
+          >
+            <DiscussionVoice
+              view={view}
+              paused={voicePaused}
+              variant={view.phase === "lobby" ? "lobby" : "talk"}
+            />
+          </div>
+          {view.phase === "lobby" && (
+            <LobbyPhase view={view} refresh={refresh} />
+          )}
+          {view.phase === "discussao" && (
+            <DiscussionPhase
+              view={view}
+              clockOffsetMs={clockOffsetMs}
+              refresh={refresh}
+            />
+          )}
+          {view.phase === "votacao" && (
+            <VotingPhase view={view} refresh={refresh} />
+          )}
+          {view.phase === "resultado" && (
+            <ResultsPhase view={view} refresh={refresh} />
+          )}
+        </div>
       )}
     </>
   );

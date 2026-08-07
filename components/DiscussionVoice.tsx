@@ -33,17 +33,19 @@ type ParticipantTile = {
 };
 
 /**
- * LiveKit A/V for lobby waiting room and discussion.
- * Mic on by default; camera opt-in. Tears down on unmount / phase leave.
+ * LiveKit A/V for talk phases (lobby, discussion, voting, results).
+ * Mic on by default; camera opt-in. Kept mounted across day phases; tears
+ * down on unmount when night starts.
  */
 export function DiscussionVoice({
   view,
   paused = false,
-  variant = "discussao",
+  variant = "talk",
 }: {
   view: RoomView;
   paused?: boolean;
-  variant?: "lobby" | "discussao";
+  /** Label only — must not remount / reconnect when it changes. */
+  variant?: "lobby" | "talk";
 }) {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [micOn, setMicOn] = useState(true);
@@ -266,7 +268,9 @@ export function DiscussionVoice({
       roomRef.current = null;
       void shutdownLiveKitMedia();
     };
-  }, [view.code, variant]);
+    // Reconnect only when the game room changes — stay joined across
+    // discussion → voting → results → lobby until night unmounts us.
+  }, [view.code]);
 
   // Host pause → mute mic + cam; restore mic only when unpaused (never auto-restore cam).
   useEffect(() => {

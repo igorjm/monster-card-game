@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 
 /**
  * POST /api/rooms/[code]/voice — Body: { token }
- * Returns a LiveKit JWT for lobby or discussion voice (player in room).
+ * Returns a LiveKit JWT for talk phases (everything except night).
  */
 export async function POST(
   req: Request,
@@ -33,11 +33,11 @@ export async function POST(
     const room = await loadRoom(code);
     const player = findPlayerByToken(room, token);
 
-    if (room.phase !== "lobby" && room.phase !== "discussao") {
-      throw new ApiError("A voz só fica disponível no lobby e na discussão.");
+    if (room.phase === "noite") {
+      throw new ApiError("A voz fica muda durante a noite.");
     }
 
-    const roomName = voiceRoomName(room.code, room.phase);
+    const roomName = voiceRoomName(room.code);
     const jwt = await createVoiceToken({
       roomName,
       identity: player.id,

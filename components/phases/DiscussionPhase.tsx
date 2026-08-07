@@ -7,7 +7,6 @@ import type { RoomView } from "@/lib/api/views";
 import { CardBack } from "@/components/RoleCard";
 import { PeekCard } from "@/components/PeekCard";
 import { HostPauseButton, PausedBanner } from "@/components/HostPauseButton";
-import { DiscussionVoice } from "@/components/DiscussionVoice";
 import { NightInfo } from "./NightPhase";
 import { AppShell } from "@/components/AppShell";
 
@@ -61,7 +60,7 @@ export function DiscussionPhase({
   const urgent = !paused && remaining <= 30;
 
   return (
-    <AppShell className="gap-4">
+    <AppShell flushTop className="gap-4">
       <header className="text-center">
         <h1 className="font-title text-sm text-ember">O DIA AMANHECEU</h1>
         <p
@@ -76,7 +75,6 @@ export function DiscussionPhase({
 
       <PausedBanner paused={paused} />
       <HostPauseButton view={view} refresh={refresh} />
-      <DiscussionVoice view={view} paused={paused} />
 
       <section className="panel-pixel rounded-lg p-4">
         <p className="mb-2 text-center text-parchment-dim">

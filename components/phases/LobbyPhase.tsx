@@ -12,7 +12,6 @@ import type { RoomView } from "@/lib/api/views";
 import { RoleCard } from "@/components/RoleCard";
 import { CardStrip } from "@/components/CardStrip";
 import { AppShell } from "@/components/AppShell";
-import { DiscussionVoice } from "@/components/DiscussionVoice";
 
 const DISCUSSION_OPTIONS = [
   { seconds: 300, label: "5 min" },
@@ -85,7 +84,7 @@ export function LobbyPhase({
   }
 
   return (
-    <AppShell wide className="gap-5">
+    <AppShell wide flushTop className="gap-5">
       <header className="text-center">
         <p className="text-parchment-dim">Código da sala</p>
         <button
@@ -132,8 +131,6 @@ export function LobbyPhase({
           </p>
         )}
       </section>
-
-      <DiscussionVoice view={view} variant="lobby" />
 
       <section className="panel-pixel min-w-0 rounded-lg p-4">
         <h2 className="font-title mb-3 text-xs text-parchment">

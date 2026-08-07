@@ -1,6 +1,6 @@
 import type { Room } from "livekit-client";
 
-/** Active LiveKit room (lobby / discussion). Cleared on night so cams don’t linger. */
+/** Active LiveKit room (talk phases). Cleared when night starts so cams don’t linger. */
 let activeRoom: Room | null = null;
 
 export function registerLiveKitRoom(room: Room | null) {

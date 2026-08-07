@@ -41,7 +41,7 @@ export function VotingPhase({
   }
 
   return (
-    <AppShell className="gap-5">
+    <AppShell flushTop className="gap-5">
       <header className="text-center">
         <h1 className="font-title text-sm text-blood-bright">HORA DA FORCA</h1>
         <p className="mt-2 text-parchment-dim">

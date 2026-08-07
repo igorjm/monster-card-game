@@ -88,11 +88,7 @@ export function LobbyPhase({
 
   async function copyCode() {
     try {
-      const shareUrl =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/sala/${view.code}`
-          : view.code;
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(shareUrl());
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -100,20 +96,48 @@ export function LobbyPhase({
     }
   }
 
+  function shareUrl() {
+    if (typeof window === "undefined") return view.code;
+    return `${window.location.origin}/sala/${view.code}`;
+  }
+
+  function shareWhatsApp() {
+    const text = `Vem jogar Lobisomem por Uma Noite — Monstros!\nSala ${view.code}: ${shareUrl()}`;
+    const href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(href, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <AppShell wide flushTop className="gap-5">
       <header className="text-center">
         <p className="text-parchment-dim">Código da sala</p>
-        <button
-          onClick={copyCode}
-          className="font-title mt-1 rounded-md border-2 border-dashed border-ember px-4 sm:px-6 py-2 text-xl sm:text-2xl tracking-[0.35em] sm:tracking-[0.4em] text-ember active:scale-95"
-        >
-          {view.code}
-        </button>
-        <p className="mt-1 text-sm text-parchment-dim">
+        <div className="mt-2 flex items-stretch justify-center gap-2">
+          <button
+            type="button"
+            onClick={copyCode}
+            className="font-title min-w-0 rounded-md border-2 border-dashed border-ember px-4 sm:px-6 py-2 text-xl sm:text-2xl tracking-[0.35em] sm:tracking-[0.4em] text-ember active:scale-95"
+          >
+            {view.code}
+          </button>
+          {view.you.isHost && (
+            <button
+              type="button"
+              onClick={shareWhatsApp}
+              className="btn-pixel btn-pixel--swamp shrink-0 rounded-md px-3"
+              aria-label="Compartilhar no WhatsApp"
+              title="WhatsApp"
+            >
+              <WhatsAppIcon />
+              <span className="hidden sm:inline">WhatsApp</span>
+            </button>
+          )}
+        </div>
+        <p className="mt-2 text-sm text-parchment-dim">
           {copied
             ? "Link copiado!"
-            : "Toque para copiar o link e envie aos amigos"}
+            : view.you.isHost
+              ? "Toque no código para copiar, ou envie pelo WhatsApp"
+              : "Toque para copiar o link e envie aos amigos"}
         </p>
       </header>
 
@@ -352,5 +376,19 @@ function RoleActionPanel({
         </div>
       </div>
     </div>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M17.47 14.38c-.28-.14-1.64-.81-1.9-.9-.25-.1-.44-.14-.62.14-.18.27-.71.9-.87 1.08-.16.18-.32.2-.6.07-.28-.14-1.17-.43-2.23-1.37-.82-.73-1.38-1.64-1.54-1.92-.16-.27-.02-.42.12-.56.13-.12.28-.32.42-.48.14-.16.18-.27.28-.45.09-.18.05-.34-.02-.48-.07-.14-.62-1.5-.85-2.05-.22-.53-.45-.46-.62-.47h-.53c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.3s.99 2.66 1.12 2.85c.14.18 1.95 2.98 4.72 4.18 1.76.76 2.12.83 2.88.7.44-.08 1.64-.67 1.87-1.32.23-.65.23-1.2.16-1.32-.07-.11-.25-.18-.53-.32zM12.05 21.8h-.01a9.8 9.8 0 0 1-4.98-1.36l-.36-.21-3.7.97 1-3.61-.24-.37a9.78 9.78 0 0 1-1.5-5.22 9.82 9.82 0 0 1 9.8-9.8 9.75 9.75 0 0 1 6.95 2.88 9.76 9.76 0 0 1 2.87 6.94 9.82 9.82 0 0 1-9.83 9.78zm8.3-18.08A11.7 11.7 0 0 0 12.04 0C5.45 0 .1 5.34.1 11.93c0 2.1.55 4.16 1.6 5.97L0 24l6.26-1.64a11.9 11.9 0 0 0 5.78 1.47h.01c6.59 0 11.94-5.35 11.94-11.93 0-3.19-1.24-6.18-3.5-8.43z" />
+    </svg>
   );
 }

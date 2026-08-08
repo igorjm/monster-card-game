@@ -144,8 +144,9 @@ export function buildDeck(
         "zumbi",
       ];
     case 5:
-      // Chart lists 7 roles; game always uses n+3 (=8). One aldeão fills the seat.
+      // 5 + 3 centro: two wolves, both undeads, no aldeão.
       return [
+        "lobisomem",
         "lobisomem",
         "cacador",
         "bruxa",
@@ -153,7 +154,6 @@ export function buildDeck(
         "mumia",
         "esqueleto",
         "zumbi",
-        "aldeao",
       ];
     case 6:
       return [

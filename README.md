@@ -45,11 +45,11 @@ cartas roda **só no servidor** — ninguém vê a carta alheia.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 3 | 1 | 1 | 1 | 1 | 1 | 1 (um dos dois) | 0 |
 | 4 | 2 | 1 | 1 | 1 | 1 | 1 (um dos dois) | 0 |
-| 5 | 1 | 1 | 1 | 1 | 1 | ambos | 1 |
+| 5 | 2 | 1 | 1 | 1 | 1 | ambos | 0 |
 | 6 | 1 | 1 | 1 | 1 | 1 | ambos | 2 |
 | 7 | 1 | 1 | 1 | 1 | 1 | ambos | 3 |
 
-(Com 5–7 jogadores o baralho precisa de n+3 cartas; a tabela oficial impressa fica 1 aldeão abaixo — preenchido para bater o cemitério de 3.)
+(Com 6–7 jogadores o baralho precisa de n+3 cartas; aldeões preenchem. Com 5: dois lobisomens, múmia e esqueleto, sem aldeão.)
 
 ### Ações da noite
 

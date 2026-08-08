@@ -92,6 +92,25 @@ describe("touchLobbyPresence", () => {
     expect(players[0]!.lastSeenAt).toBe(new Date(now).toISOString());
   });
 
+  it("does not prune seats when the lobby is already full", () => {
+    const now = Date.parse("2026-01-01T00:10:00.000Z");
+    const seated = Array.from({ length: 7 }, (_, i) => ({
+      id: `p${i}`,
+      token: `t${i}`,
+      nickname: `P${i}`,
+      joinedAt: "2026-01-01T00:00:00.000Z",
+      lastSeenAt: new Date(now - LOBBY_STALE_MS - 5000).toISOString(),
+    }));
+    // Caller is also "stale" on paper, but we still only refresh them.
+    seated[0]!.lastSeenAt = new Date(now - LOBBY_STALE_MS - 5000).toISOString();
+    const room = lobby(seated);
+    const patch = touchLobbyPresence(room, "t0", now);
+    expect(patch).not.toEqual({});
+    const players = (patch as { players: Room["players"] }).players;
+    expect(players).toHaveLength(7);
+    expect(players[0]!.lastSeenAt).toBe(new Date(now).toISOString());
+  });
+
   it("keeps the whole table after restart refreshes lastSeenAt", () => {
     const matchStart = Date.parse("2026-01-01T00:00:00.000Z");
     const afterMatch = matchStart + LOBBY_STALE_MS * 3;

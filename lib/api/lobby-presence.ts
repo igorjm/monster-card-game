@@ -1,4 +1,4 @@
-import type { PlayerInfo, Room } from "@/lib/game/types";
+import { MAX_PLAYERS, type PlayerInfo, type Room } from "../game/types";
 
 /** Drop lobby seats that haven't pinged recently (tab crash / killed app). */
 export const LOBBY_STALE_MS = 35_000;
@@ -70,10 +70,16 @@ export function touchLobbyPresence(
     return { ...p, lastSeenAt: nowIso };
   });
 
-  const fresh = players.filter((p) => nowMs - seenAtMs(p) < LOBBY_STALE_MS);
-  if (fresh.length !== players.length) {
-    changed = true;
-    players = fresh;
+  // Full lobby: never prune — a joiner must wait for an explicit leave,
+  // instead of racing a stale ping to steal a seat.
+  if (players.length < MAX_PLAYERS) {
+    const fresh = players.filter(
+      (p) => nowMs - seenAtMs(p) < LOBBY_STALE_MS,
+    );
+    if (fresh.length !== players.length) {
+      changed = true;
+      players = fresh;
+    }
   }
 
   if (!changed) return {};

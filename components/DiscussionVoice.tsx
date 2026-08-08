@@ -408,7 +408,7 @@ export function DiscussionVoice({
       </div>
 
       {status === "connected" && tiles.length > 0 && (
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:thin]">
+        <div className="-mx-1 flex flex-wrap justify-center gap-2 px-1 pb-0.5">
           {tiles.map((tile) => (
             <ParticipantVideoTile
               key={tile.identity}

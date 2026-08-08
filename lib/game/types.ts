@@ -85,6 +85,8 @@ export interface GameState {
    * Kept secret during discussion and voting.
    */
   hunterRevealed?: Role;
+  /** Set after win stats are recorded so rematches / retries do not double-count. */
+  winsAwarded?: boolean;
   /** Private night info per player id. */
   privateInfo: Record<string, PrivateInfo[]>;
   /** Which players already used their night action. */

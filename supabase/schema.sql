@@ -14,6 +14,15 @@ create table public.rooms (
   updated_at timestamptz not null default now()
 );
 
+-- Career wins keyed by the private browser token (same device/browser).
+create table if not exists public.player_stats (
+  token text primary key,
+  nickname text not null default '',
+  wins integer not null default 0,
+  updated_at timestamptz not null default now()
+);
+
 -- All access goes through the service role in Next.js API routes.
 -- RLS enabled with no policies = deny all for anon/authenticated.
 alter table public.rooms enable row level security;
+alter table public.player_stats enable row level security;

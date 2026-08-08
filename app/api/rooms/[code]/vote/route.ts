@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { ApiError, findPlayerByToken, updateRoom } from "@/lib/api/room-store";
 import { errorResponse } from "@/lib/api/respond";
-import { buildView } from "@/lib/api/views";
+import { buildViewResponse } from "@/lib/api/views";
+import { awardMatchWins } from "@/lib/api/player-stats";
 import { resolveVotes, shouldRestartDebate } from "@/lib/game/engine";
 
 export const runtime = "nodejs";
@@ -15,6 +16,7 @@ export async function POST(
     const { code } = await ctx.params;
     const { token, targetId } = await req.json();
 
+    let awardedResult = false;
     const room = await updateRoom(code, (current) => {
       const player = findPlayerByToken(current, token);
       const game = current.game;
@@ -55,19 +57,30 @@ export async function POST(
         };
       }
 
+      const result = resolveVotes(next);
+      awardedResult = !next.winsAwarded;
       return {
         phase: "resultado" as const,
         game: {
           ...next,
-          // Reveal the hunter card only with the final results.
           hunterRevealed: next.hunterHidden,
-          result: resolveVotes(next),
+          result,
+          winsAwarded: true,
         },
       };
     });
 
+    if (
+      awardedResult &&
+      room.phase === "resultado" &&
+      room.game?.result &&
+      room.game.winsAwarded
+    ) {
+      await awardMatchWins(room.players, room.game.result);
+    }
+
     const player = findPlayerByToken(room, token);
-    return NextResponse.json(buildView(room, player));
+    return NextResponse.json(await buildViewResponse(room, player));
   } catch (e) {
     return errorResponse(e);
   }

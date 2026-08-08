@@ -146,17 +146,28 @@ export function LobbyPhase({
           JOGADORES ({view.players.length}/7)
         </h2>
         <ul className="flex flex-col gap-2">
-          {view.players.map((p) => (
+          {[...view.players]
+            .sort((a, b) => b.wins - a.wins || a.nickname.localeCompare(b.nickname))
+            .map((p, rank) => (
             <li
               key={p.id}
               className="flex items-center gap-3 rounded-md border-2 border-night-card bg-grave px-3 py-2"
             >
+              <span className="font-title w-5 shrink-0 text-center text-[0.55rem] text-ember">
+                #{rank + 1}
+              </span>
               <span className="h-3 w-3 shrink-0 rounded-full bg-swamp-bright" />
-              <span className="flex-1 truncate">
+              <span className="min-w-0 flex-1 truncate">
                 {p.nickname}
                 {p.id === view.you.id && (
                   <span className="text-parchment-dim"> (você)</span>
                 )}
+              </span>
+              <span
+                className="font-title shrink-0 text-[0.5rem] text-parchment-dim"
+                title="Vitórias"
+              >
+                {p.wins}V
               </span>
               {p.isHost && (
                 <span className="font-title text-[0.5rem] text-ember">
@@ -166,6 +177,9 @@ export function LobbyPhase({
             </li>
           ))}
         </ul>
+        <p className="mt-2 text-center text-sm text-parchment-dim">
+          Ranking: +1 vitória quando seu time final ganha a partida
+        </p>
         {!enoughPlayers && (
           <p className="mt-3 text-center text-parchment-dim">
             Aguardando pelo menos {MIN_PLAYERS} jogadores...
@@ -240,8 +254,9 @@ export function LobbyPhase({
           jogadores + 3 cartas no centro · arraste para ver todas
         </p>
         <p className="mt-2 text-sm leading-snug text-parchment-dim">
-          Baralho oficial: com 3, um lobisomem e múmia ou esqueleto; com 4, dois
-          lobisomens; a partir de 5 entram múmia, esqueleto e aldeão(ões).
+          Baralho oficial: com 3, um lobisomem e múmia ou esqueleto; com 4–5,
+          dois lobisomens; a partir de 5 entram múmia e esqueleto (aldeões só
+          com 6–7).
         </p>
       </section>
 

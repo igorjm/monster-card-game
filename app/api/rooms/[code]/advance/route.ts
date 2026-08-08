@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { findPlayerByToken, updateRoom } from "@/lib/api/room-store";
 import { errorResponse } from "@/lib/api/respond";
-import { buildView } from "@/lib/api/views";
+import { buildViewResponse } from "@/lib/api/views";
 import { elapsedNightSeconds, resolveDiscussionEnd } from "@/lib/game/engine";
 import { NIGHT_TOTAL_SECONDS } from "@/lib/game/timeline";
 
@@ -62,7 +62,7 @@ export async function POST(
     });
 
     const player = findPlayerByToken(room, token);
-    return NextResponse.json(buildView(room, player));
+    return NextResponse.json(await buildViewResponse(room, player));
   } catch (e) {
     return errorResponse(e);
   }

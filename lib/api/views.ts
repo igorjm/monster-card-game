@@ -15,6 +15,8 @@ export interface PublicPlayer {
   nickname: string;
   isHost: boolean;
   hasVoted: boolean;
+  /** Career wins for this browser token (lobby ranking). */
+  wins: number;
 }
 
 /** Everything a single client is allowed to know. */
@@ -90,7 +92,11 @@ export function filterPrivateInfo(
   return next;
 }
 
-export function buildView(room: Room, player: PlayerInfo): RoomView {
+export function buildView(
+  room: Room,
+  player: PlayerInfo,
+  winsByPlayerId: Record<string, number> = {},
+): RoomView {
   const game = room.game;
   const nightElapsed = game ? elapsedNightSeconds(game) : 0;
   const segmentKey =
@@ -106,6 +112,7 @@ export function buildView(room: Room, player: PlayerInfo): RoomView {
       nickname: p.nickname,
       isHost: p.id === room.host_id,
       hasVoted: game ? p.id in game.votes : false,
+      wins: winsByPlayerId[p.id] ?? 0,
     })),
     you: {
       id: player.id,
@@ -140,4 +147,11 @@ export function buildView(room: Room, player: PlayerInfo): RoomView {
         }
       : null,
   };
+}
+
+/** Room view with career wins attached for lobby ranking. */
+export async function buildViewResponse(room: Room, player: PlayerInfo) {
+  const { winsByPlayerId } = await import("./player-stats");
+  const wins = await winsByPlayerId(room.players);
+  return buildView(room, player, wins);
 }

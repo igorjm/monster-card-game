@@ -7,7 +7,7 @@ import {
   updateRoom,
 } from "@/lib/api/room-store";
 import { errorResponse } from "@/lib/api/respond";
-import { buildView } from "@/lib/api/views";
+import { buildViewResponse } from "@/lib/api/views";
 import { touchLobbyPresence } from "@/lib/api/lobby-presence";
 import { broadcastRoomUpdate } from "@/lib/supabase/admin";
 
@@ -46,7 +46,7 @@ export async function GET(
     }
 
     const player = findPlayerByToken(room, token);
-    return NextResponse.json(buildView(room, player));
+    return NextResponse.json(await buildViewResponse(room, player));
   } catch (e) {
     return errorResponse(e);
   }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { ApiError, updateRoom } from "@/lib/api/room-store";
 import { errorResponse } from "@/lib/api/respond";
-import { buildView } from "@/lib/api/views";
+import { buildViewResponse } from "@/lib/api/views";
 import { MAX_PLAYERS, type PlayerInfo } from "@/lib/game/types";
 
 export const runtime = "nodejs";
@@ -59,7 +59,7 @@ export async function POST(
     });
 
     if (!joined) throw new ApiError("Erro ao entrar na sala.", 500);
-    return NextResponse.json(buildView(room, joined));
+    return NextResponse.json(await buildViewResponse(room, joined));
   } catch (e) {
     return errorResponse(e);
   }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { ApiError, generateRoomCode, insertRoom } from "@/lib/api/room-store";
 import { errorResponse } from "@/lib/api/respond";
-import { buildView } from "@/lib/api/views";
+import { buildViewResponse } from "@/lib/api/views";
 import type { PlayerInfo } from "@/lib/game/types";
 
 export const runtime = "nodejs";
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
           players: [host],
           game: null,
         });
-        return NextResponse.json(buildView(room, host));
+        return NextResponse.json(await buildViewResponse(room, host));
       } catch (e) {
         if (attempt === 4) throw e;
       }

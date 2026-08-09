@@ -142,8 +142,23 @@ describe("applyNightAction", () => {
     );
     expect(next.currentRoles.p1).toBe("cacador");
     expect(next.hunterHidden).toBe("lobisomem");
-    expect(next.center).toEqual(["mumia", "bruxa"]);
+    expect(next.center).toEqual([null, "mumia", "bruxa"]);
     expect(info[0]).toEqual({ kind: "escondeu_centro", index: 0 });
+  });
+
+  it("cacador leaving middle empty keeps left and right seats", () => {
+    const state = fixedState(
+      ["cacador", "aldeao", "aldeao"],
+      ["lobisomem", "mumia", "bruxa"],
+    );
+    const { state: next } = applyNightAction(
+      state,
+      "p1",
+      { type: "cacador_take", centerIndex: 1 },
+      at(state, 18),
+    );
+    expect(next.hunterHidden).toBe("mumia");
+    expect(next.center).toEqual(["lobisomem", null, "bruxa"]);
   });
 
   it("vampiro swaps with another player", () => {
@@ -188,7 +203,7 @@ describe("applyNightAction", () => {
       at(state, 68),
     );
     expect(afterTake.currentRoles.p1).toBe("bruxa");
-    expect(afterTake.center).toEqual(["mumia", "esqueleto"]);
+    expect(afterTake.center).toEqual([null, "mumia", "esqueleto"]);
     expect(afterTake.pendingChain.p1).toBe("bruxa");
 
     const { state: afterChain, info } = applyNightAction(
@@ -217,20 +232,21 @@ describe("applyNightAction", () => {
       at(state, 68),
     );
     expect(next.currentRoles.p1).toBe("lobisomem");
-    expect(next.center).toEqual(["mumia", "bruxa"]);
+    expect(next.center).toEqual([null, "mumia", "bruxa"]);
     const wolfInfo = info.find((i) => i.kind === "lobisomens");
     expect(wolfInfo).toBeDefined();
     if (wolfInfo?.kind === "lobisomens") {
       expect(wolfInfo.wolfIds.sort()).toEqual(["p1", "p2"]);
-      expect(wolfInfo.center).toEqual(["mumia", "bruxa"]);
+      expect(wolfInfo.center).toEqual([null, "mumia", "bruxa"]);
     }
   });
 
   it("lobisomem peeks remaining center during their window", () => {
     const state = fixedState(
       ["lobisomem", "aldeao", "aldeao"],
-      ["mumia", "bruxa"],
+      ["mumia", "bruxa", "zumbi"],
     );
+    state.center = ["mumia", null, "bruxa"];
     const { state: next, info } = applyNightAction(
       state,
       "p1",
@@ -240,7 +256,7 @@ describe("applyNightAction", () => {
     expect(info[0]).toEqual({
       kind: "lobisomens",
       wolfIds: ["p1"],
-      center: ["mumia", "bruxa"],
+      center: ["mumia", null, "bruxa"],
     });
     // Idempotent
     const again = applyNightAction(

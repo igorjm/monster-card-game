@@ -45,6 +45,11 @@ export interface RoomView {
     /** Server timestamp when pause began (for frozen elapsed). */
     pausedAt?: string;
     centerCount: number;
+    /**
+     * Fixed left/middle/right presence (length 3).
+     * `false` = that seat was taken by Caçador/Zumbi.
+     */
+    centerSlots: boolean[];
     votedCount: number;
     yourVote?: string;
     /** Public: hunter's card after discussion ends. */
@@ -138,7 +143,8 @@ export function buildView(
           pendingChain: game.pendingChain[player.id],
           paused: Boolean(game.pausedAt),
           pausedAt: game.pausedAt,
-          centerCount: game.center.length,
+          centerCount: game.center.filter((c) => c != null).length,
+          centerSlots: game.center.map((c) => c != null),
           votedCount: Object.keys(game.votes).length,
           yourVote: game.votes[player.id],
           hunterRevealed:

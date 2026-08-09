@@ -23,6 +23,7 @@ import { PeekCard } from "@/components/PeekCard";
 import { AppShell } from "@/components/AppShell";
 import { HostPauseButton, PausedBanner } from "@/components/HostPauseButton";
 import { shutdownLiveKitMedia } from "@/lib/client/livekitMedia";
+import { RevealedGraveyardRow } from "@/components/GraveyardRow";
 
 const NIGHT_SOUND_KEY = "monstros:night-sound";
 
@@ -379,6 +380,8 @@ export function NightInfo({
 function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
   const nameOf = (id: string) =>
     view.players.find((p) => p.id === id)?.nickname ?? "???";
+  const slotName = (index: number) =>
+    (["esquerda", "meio", "direita"] as const)[index] ?? "do cemitério";
 
   switch (info.kind) {
     case "lobisomens": {
@@ -390,17 +393,17 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
               ? `Lobisomens: ${info.wolfIds.map(nameOf).join(", ")}`
               : "Você é o único lobisomem."}
           </p>
-          {info.center && info.center.length > 0 ? (
+          {info.center && info.center.some((c) => c != null) ? (
             <>
               <p className="mb-2 text-parchment-dim">
-                Cartas do centro (só agora — memorize!):
+                Cemitério (só agora — memorize as posições!):
               </p>
-              <div className="flex gap-2">
-                {info.center.map((role, i) => (
-                  <RoleCard key={i} role={role} size="sm" flip />
-                ))}
-              </div>
+              <RevealedGraveyardRow slots={info.center} size="sm" />
             </>
+          ) : info.center && info.center.length > 0 ? (
+            <p className="text-sm text-parchment-dim">
+              O cemitério está vazio.
+            </p>
           ) : (
             <p className="text-sm text-parchment-dim">
               As cartas do centro só aparecem no turno do lobisomem. Memorize
@@ -426,15 +429,16 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
           <RoleCard role={info.role} size="sm" flip />
           <p className="text-parchment">
             Você pegou <span className="text-ember">{ROLES[info.role].name}</span>{" "}
-            do centro. Agora esse é o seu papel!
+            da posição {slotName(info.index)} do cemitério. Agora esse é o seu
+            papel!
           </p>
         </div>
       );
     case "escondeu_centro":
       return (
         <p className="text-parchment">
-          Você escondeu a carta do centro {info.index + 1} sem olhar. Ela será
-          revelada no fim da discussão!
+          Você escondeu a carta da posição {slotName(info.index)} do cemitério
+          sem olhar. Ela será revelada no fim da discussão!
         </p>
       );
     case "trocou":
@@ -496,14 +500,14 @@ function ActionPanel({
 
       {actionRole === "zumbi" && (
         <CenterPicker
-          count={view.game!.centerCount}
+          slots={view.game!.centerSlots}
           busy={busy}
           onPick={(i) => submit({ type: "zumbi_take", centerIndex: i })}
         />
       )}
       {actionRole === "cacador" && (
         <CenterPicker
-          count={view.game!.centerCount}
+          slots={view.game!.centerSlots}
           busy={busy}
           confirmLabel="Esconder sem olhar"
           onPick={(i) => submit({ type: "cacador_take", centerIndex: i })}
@@ -530,33 +534,44 @@ function ActionPanel({
 }
 
 function CenterPicker({
-  count,
+  slots,
   busy,
   onPick,
   confirmLabel = "Confirmar",
 }: {
-  count: number;
+  /** Fixed left/middle/right; false = already taken. */
+  slots: boolean[];
   busy: boolean;
   onPick: (index: number) => void;
   confirmLabel?: string;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
+  const seats = [...slots];
+  while (seats.length < 3) seats.push(false);
+  const fixed = seats.slice(0, 3);
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex justify-center gap-3">
-        {Array.from({ length: count }, (_, i) => (
-          <CardBack
-            key={i}
-            size="md"
-            label={`Centro ${i + 1}`}
-            selected={selected === i}
-            onClick={() => setSelected(i)}
-          />
-        ))}
+        {fixed.map((filled, i) =>
+          filled ? (
+            <CardBack
+              key={i}
+              size="md"
+              selected={selected === i}
+              onClick={() => setSelected(i)}
+            />
+          ) : (
+            <div
+              key={i}
+              className="h-44 w-32 shrink-0 rounded-lg border-[3px] border-dashed border-night-card bg-grave/40"
+              aria-hidden
+            />
+          ),
+        )}
       </div>
       <button
         className="btn-pixel btn-pixel--ember w-full rounded-md"
-        disabled={selected === null || busy}
+        disabled={selected === null || busy || (selected !== null && !fixed[selected])}
         onClick={() => selected !== null && onPick(selected)}
       >
         {busy ? "..." : confirmLabel}

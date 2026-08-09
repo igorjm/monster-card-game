@@ -10,7 +10,7 @@ const peek: PrivateInfo = {
 const wolf: PrivateInfo = {
   kind: "lobisomens",
   wolfIds: ["p1", "p3"],
-  center: ["aldeao", "bruxa"],
+  center: ["aldeao", null, "bruxa"],
 };
 
 describe("filterPrivateInfo", () => {

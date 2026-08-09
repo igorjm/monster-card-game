@@ -39,8 +39,8 @@ export type PrivateInfo =
   | {
       kind: "lobisomens";
       wolfIds: string[];
-      /** Present only while phase is noite; stripped from views later. */
-      center?: Role[];
+      /** Present only while phase is noite; null = empty fixed slot. */
+      center?: (Role | null)[];
     }
   | { kind: "viu_jogador"; playerId: string; role: Role }
   | { kind: "pegou_centro"; index: number; role: Role }
@@ -56,7 +56,8 @@ export interface GameResult {
   winners: Team;
   finalRoles: Record<string, Role>;
   originalRoles: Record<string, Role>;
-  center: Role[];
+  /** Fixed left/middle/right slots; null when taken by hunter/zombie. */
+  center: (Role | null)[];
   centerOriginal: Role[];
   votes: Record<string, string>;
   /** Card the hunter hid, revealed at end of discussion. */
@@ -76,7 +77,11 @@ export interface GameState {
   pausedAt?: string;
   originalRoles: Record<string, Role>;
   currentRoles: Record<string, Role>;
-  center: Role[];
+  /**
+   * Always three fixed slots (left / middle / right).
+   * `null` means that seat was removed by Caçador or Zumbi.
+   */
+  center: (Role | null)[];
   centerOriginal: Role[];
   /** Card removed by the hunter, unseen until discussion ends. */
   hunterHidden?: Role;

@@ -7,6 +7,7 @@ import type { RoomView } from "@/lib/api/views";
 import { RoleCard } from "@/components/RoleCard";
 import { AppShell } from "@/components/AppShell";
 import { NightInfo } from "./NightPhase";
+import { RevealedGraveyardRow } from "@/components/GraveyardRow";
 
 export function ResultsPhase({
   view,
@@ -120,16 +121,8 @@ export function ResultsPhase({
             );
           })}
         </ul>
-        <p className="mb-2 mt-4 text-parchment-dim">Centro no fim da noite:</p>
-        <div className="flex justify-center gap-3">
-          {result.center.length === 0 ? (
-            <p className="text-parchment-dim">Vazio</p>
-          ) : (
-            result.center.map((role, i) => (
-              <RoleCard key={i} role={role} size="sm" flip />
-            ))
-          )}
-        </div>
+        <p className="mb-2 mt-4 text-parchment-dim">Cemitério no fim da noite:</p>
+        <RevealedGraveyardRow slots={result.center} size="sm" />
       </section>
 
       {view.you.isHost ? (

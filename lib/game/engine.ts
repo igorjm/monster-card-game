@@ -1,5 +1,6 @@
 import { ROLES, buildDeck } from "./roles";
 import {
+  CENTER_CARDS,
   type GameResult,
   type GameState,
   type NightAction,
@@ -21,6 +22,10 @@ function shuffle<T>(items: T[], rng: () => number = Math.random): T[] {
   return arr;
 }
 
+export function occupiedCenter(center: (Role | null)[]): Role[] {
+  return center.filter((r): r is Role => r != null);
+}
+
 export function dealGame(
   players: PlayerInfo[],
   discussionSeconds: number,
@@ -31,7 +36,13 @@ export function dealGame(
   players.forEach((p, i) => {
     originalRoles[p.id] = deck[i];
   });
-  const center = deck.slice(players.length);
+  const centerSlice = deck.slice(players.length);
+  if (centerSlice.length !== CENTER_CARDS) {
+    throw new Error(
+      `Baralho inválido: esperado ${CENTER_CARDS} no centro, veio ${centerSlice.length}.`,
+    );
+  }
+  const center: (Role | null)[] = [...centerSlice];
 
   // Werewolves only learn each other at deal; center cards are peeked
   // during their night window (after hunter may have removed one).
@@ -40,8 +51,8 @@ export function dealGame(
     discussionSeconds,
     originalRoles,
     currentRoles: { ...originalRoles },
-    center: [...center],
-    centerOriginal: [...center],
+    center,
+    centerOriginal: [...centerSlice],
     privateInfo: {},
     acted: {},
     pendingChain: {},
@@ -191,10 +202,11 @@ export function applyNightAction(
   switch (action.type) {
     case "zumbi_take": {
       const idx = action.centerIndex;
-      if (idx < 0 || idx >= next.center.length) {
+      if (idx < 0 || idx >= next.center.length || next.center[idx] == null) {
         throw new ActionError("Carta do centro inválida.");
       }
-      const [taken] = next.center.splice(idx, 1);
+      const taken = next.center[idx]!;
+      next.center[idx] = null;
       next.currentRoles[actorId] = taken;
       give({ kind: "pegou_centro", index: idx, role: taken });
 
@@ -224,13 +236,14 @@ export function applyNightAction(
     }
     case "cacador_take": {
       const idx = action.centerIndex;
-      if (idx < 0 || idx >= next.center.length) {
+      if (idx < 0 || idx >= next.center.length || next.center[idx] == null) {
         throw new ActionError("Carta do centro inválida.");
       }
       if (next.hunterHidden) {
         throw new ActionError("Você já escondeu uma carta.");
       }
-      const [taken] = next.center.splice(idx, 1);
+      const taken = next.center[idx]!;
+      next.center[idx] = null;
       next.hunterHidden = taken;
       // Hunter keeps their role; they do not see the card.
       give({ kind: "escondeu_centro", index: idx });

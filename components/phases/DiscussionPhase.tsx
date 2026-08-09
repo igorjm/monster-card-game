@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
 import { formatSeconds, useNow } from "@/lib/client/useNow";
 import type { RoomView } from "@/lib/api/views";
-import { CardBack } from "@/components/RoleCard";
 import { PeekCard } from "@/components/PeekCard";
 import { HostPauseButton, PausedBanner } from "@/components/HostPauseButton";
 import { NightInfo } from "./NightPhase";
 import { AppShell } from "@/components/AppShell";
+import { GraveyardRow } from "@/components/GraveyardRow";
 
 export function DiscussionPhase({
   view,
@@ -77,19 +77,13 @@ export function DiscussionPhase({
       <HostPauseButton view={view} refresh={refresh} />
 
       <section className="panel-pixel rounded-lg p-4">
-        <p className="mb-2 text-center text-parchment-dim">
-          Cartas do centro
-          {game.centerCount < 3 ? " (faltando carta escondida/devorada)" : ""}
+        <p className="mb-3 text-center text-parchment-dim">
+          Cemitério
+          {game.centerCount < 3
+            ? " — espaço vazio = carta tirada (posição importa)"
+            : ""}
         </p>
-        <div className="flex justify-center gap-3">
-          {game.centerCount === 0 ? (
-            <p className="text-parchment-dim">Nenhuma carta no centro</p>
-          ) : (
-            Array.from({ length: game.centerCount }, (_, i) => (
-              <CardBack key={i} size="sm" label={`${i + 1}`} />
-            ))
-          )}
-        </div>
+        <GraveyardRow slots={game.centerSlots} size="sm" />
       </section>
 
       <section className="flex flex-col items-center gap-2">

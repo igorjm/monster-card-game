@@ -24,6 +24,17 @@ export const ROLES: Record<Role, RoleMeta> = {
     art: "/art/aldeao.png",
     hasAction: false,
   },
+  lavrador: {
+    id: "lavrador",
+    name: "Aldeão",
+    letter: "A",
+    team: "aliados",
+    description:
+      "Não faz nada durante a noite. Use sua lábia para descobrir quem é o lobisomem. A arte (roupa preta e arado) distingue este aldeão do de roupa verde.",
+    nightHint: "Você dorme profundamente. Aguarde o amanhecer.",
+    art: "/art/lavrador.png",
+    hasAction: false,
+  },
   cacador: {
     id: "cacador",
     name: "Caçador",
@@ -156,7 +167,9 @@ export function buildDeck(
         "zumbi",
       ];
     case 6:
+      // Official chart: 2 wolves, both undeads, 1 aldeão.
       return [
+        "lobisomem",
         "lobisomem",
         "cacador",
         "bruxa",
@@ -164,11 +177,12 @@ export function buildDeck(
         "mumia",
         "esqueleto",
         "zumbi",
-        "aldeao",
         "aldeao",
       ];
     case 7:
+      // Official chart: 2 wolves, both undeads, 2 aldeões (distinct arts).
       return [
+        "lobisomem",
         "lobisomem",
         "cacador",
         "bruxa",
@@ -177,8 +191,7 @@ export function buildDeck(
         "esqueleto",
         "zumbi",
         "aldeao",
-        "aldeao",
-        "aldeao",
+        "lavrador",
       ];
     default:
       throw new Error(`Jogadores deve ser entre 3 e 7 (recebido ${playerCount}).`);

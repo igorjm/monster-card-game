@@ -84,9 +84,12 @@ describe("buildDeck", () => {
     expect(count(d5, "esqueleto")).toBe(1);
     expect(count(d5, "aldeao")).toBe(0);
 
-    expect(count(buildDeck(6, fixed), "aldeao")).toBe(2);
-    expect(count(buildDeck(7, fixed), "aldeao")).toBe(3);
-    expect(count(buildDeck(7, fixed), "lobisomem")).toBe(1);
+    expect(count(buildDeck(6, fixed), "lobisomem")).toBe(2);
+    expect(count(buildDeck(6, fixed), "aldeao")).toBe(1);
+    expect(count(buildDeck(6, fixed), "lavrador")).toBe(0);
+    expect(count(buildDeck(7, fixed), "lobisomem")).toBe(2);
+    expect(count(buildDeck(7, fixed), "aldeao")).toBe(1);
+    expect(count(buildDeck(7, fixed), "lavrador")).toBe(1);
   });
 });
 

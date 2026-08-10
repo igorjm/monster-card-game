@@ -1,5 +1,6 @@
 export type Role =
   | "aldeao"
+  | "lavrador"
   | "cacador"
   | "bruxa"
   | "lobisomem"

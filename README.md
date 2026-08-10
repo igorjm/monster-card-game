@@ -46,21 +46,21 @@ cartas roda **só no servidor** — ninguém vê a carta alheia.
 | 3 | 1 | 1 | 1 | 1 | 1 | 1 (um dos dois) | 0 |
 | 4 | 2 | 1 | 1 | 1 | 1 | 1 (um dos dois) | 0 |
 | 5 | 2 | 1 | 1 | 1 | 1 | ambos | 0 |
-| 6 | 1 | 1 | 1 | 1 | 1 | ambos | 2 |
-| 7 | 1 | 1 | 1 | 1 | 1 | ambos | 3 |
+| 6 | 2 | 1 | 1 | 1 | 1 | ambos | 1 |
+| 7 | 2 | 1 | 1 | 1 | 1 | ambos | 2 |
 
-(Com 6–7 jogadores o baralho precisa de n+3 cartas; aldeões preenchem. Com 5: dois lobisomens, múmia e esqueleto, sem aldeão.)
+(Tabela oficial Monstros. Com 7 jogadores os 2 aldeões têm artes distintas — roupa verde vs. preta com arado — para a discussão poder diferenciá-los.)
 
 ### Ações da noite
 
 | Papel | Ação |
 | --- | --- |
 | **Caçador** | Esconde uma carta do centro **sem olhar**. Se for lobisomem, isso só conta **depois** da votação (ver vitória) |
-| **Bruxa** | Olha a carta de um jogador |
+| **Bruxa** | Olha a carta de um jogador; também vê o cemitério (só o verso — espaço vazio = Caçador já agiu) |
 | **Lobisomem** | Reconhece os outros lobisomens e olha o centro **só no turno dele** (depois vira de novo) |
 | **Zumbi** | Remove uma carta do centro, assume o papel e executa a ação dele |
-| **Vampiro** | Troca a própria carta com a de **outro jogador** em segredo (o alvo não sabe) |
-| Aldeão / Múmia / Esqueleto | Dormem |
+| **Vampiro** | Troca a própria carta com a de **outro jogador** ou do **cemitério**, em segredo |
+| Aldeão / Múmia / Esqueleto | Dormem (olhos fechados — não veem o cemitério) |
 
 ## Como jogar
 

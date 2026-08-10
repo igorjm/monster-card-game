@@ -51,8 +51,9 @@ export const ROLES: Record<Role, RoleMeta> = {
     name: "Bruxa",
     letter: "B",
     team: "aliados",
-    description: "Durante a noite, pode olhar a carta de um jogador.",
-    nightHint: "Escolha um jogador para espiar a carta.",
+    description:
+      "Durante a noite, pode olhar a carta de um jogador. Também vê o cemitério (só o verso) — um espaço vazio indica que o Caçador já escondeu uma carta.",
+    nightHint: "Espie um jogador. Observe também o cemitério (versos).",
     art: "/art/bruxa.png",
     hasAction: true,
   },
@@ -106,8 +107,9 @@ export const ROLES: Record<Role, RoleMeta> = {
     letter: "V",
     team: "aliados",
     description:
-      "Troca sua carta com a de outro jogador em segredo. O alvo não sabe que foi trocado.",
-    nightHint: "Escolha um jogador para trocar de carta — ele não saberá.",
+      "Troca sua carta com a de outro jogador ou com uma do cemitério, em segredo. O alvo não sabe que foi trocado.",
+    nightHint:
+      "Escolha um jogador ou uma carta do cemitério para trocar — o alvo não saberá.",
     art: "/art/vampiro.png",
     hasAction: true,
   },

@@ -23,7 +23,7 @@ import { PeekCard } from "@/components/PeekCard";
 import { AppShell } from "@/components/AppShell";
 import { HostPauseButton, PausedBanner } from "@/components/HostPauseButton";
 import { shutdownLiveKitMedia } from "@/lib/client/livekitMedia";
-import { RevealedGraveyardRow } from "@/components/GraveyardRow";
+import { RevealedGraveyardRow, GraveyardRow } from "@/components/GraveyardRow";
 
 const NIGHT_SOUND_KEY = "monstros:night-sound";
 
@@ -305,6 +305,19 @@ export function NightPhase({
 
       {showBruxaReveal && <BruxaReveal view={view} />}
 
+      {/* Witch still sees cemetery backs for the rest of her window (hunter gap). */}
+      {segment?.key === "bruxa" &&
+        myRole === "bruxa" &&
+        game.hasActed &&
+        !paused && (
+          <section className="panel-pixel rounded-lg p-4">
+            <p className="mb-3 text-center text-parchment-dim">
+              Cemitério (só o verso — espaço vazio = carta escondida)
+            </p>
+            <GraveyardRow slots={game.centerSlots} size="sm" />
+          </section>
+        )}
+
       <NightInfo
         view={view}
         hideWitchPeek={showBruxaReveal}
@@ -315,6 +328,12 @@ export function NightPhase({
           game.yourInfo.length === 0
         }
       />
+
+      {!ROLES[myRole].hasAction && myRole !== "lobisomem" && (
+          <p className="panel-pixel rounded-lg p-3 text-center text-sm text-parchment-dim">
+            Olhos fechados — o cemitério só aparece quando o seu papel acorda.
+          </p>
+        )}
 
       <p className="mt-auto text-center text-sm text-parchment-dim">
         Não mostre sua tela para ninguém!
@@ -514,11 +533,19 @@ function ActionPanel({
         />
       )}
       {actionRole === "bruxa" && (
-        <PlayerPicker
-          view={view}
-          busy={busy}
-          onPick={(id) => submit({ type: "bruxa_look", targetPlayerId: id })}
-        />
+        <>
+          <div>
+            <p className="mb-2 text-center text-parchment-dim">
+              Cemitério (só o verso — espaço vazio = Caçador)
+            </p>
+            <GraveyardRow slots={view.game!.centerSlots} size="sm" />
+          </div>
+          <PlayerPicker
+            view={view}
+            busy={busy}
+            onPick={(id) => submit({ type: "bruxa_look", targetPlayerId: id })}
+          />
+        </>
       )}
       {actionRole === "vampiro" && (
         <VampireTargetPicker
@@ -630,12 +657,69 @@ function VampireTargetPicker({
   busy: boolean;
   onPick: (target: SwapTarget) => void;
 }) {
+  const [selected, setSelected] = useState<SwapTarget | null>(null);
+  const targets = view.players.filter((p) => p.id !== view.you.id);
+  const seats = [...view.game!.centerSlots];
+  while (seats.length < 3) seats.push(false);
+  const fixed = seats.slice(0, 3);
+
+  const label =
+    selected?.kind === "player"
+      ? targets.find((t) => t.id === selected.playerId)?.nickname
+      : selected?.kind === "center"
+        ? (["esquerda", "meio", "direita"] as const)[selected.index]
+        : null;
+
   return (
-    <PlayerPicker
-      view={view}
-      busy={busy}
-      confirmLabel="Trocar em segredo"
-      onPick={(id) => onPick({ kind: "player", playerId: id })}
-    />
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="mb-2 text-center text-parchment-dim">Cemitério</p>
+        <div className="flex justify-center gap-3">
+          {fixed.map((filled, i) =>
+            filled ? (
+              <CardBack
+                key={i}
+                size="md"
+                selected={
+                  selected?.kind === "center" && selected.index === i
+                }
+                onClick={() => setSelected({ kind: "center", index: i })}
+              />
+            ) : (
+              <div
+                key={i}
+                className="h-44 w-32 shrink-0 rounded-lg border-[3px] border-dashed border-night-card bg-grave/40"
+                aria-hidden
+              />
+            ),
+          )}
+        </div>
+      </div>
+      <div>
+        <p className="mb-2 text-center text-parchment-dim">Jogadores</p>
+        <div className="scroll-cards flex justify-start gap-3 overflow-x-auto pb-1 sm:justify-center sm:flex-wrap">
+          {targets.map((p) => (
+            <CardBack
+              key={p.id}
+              size="md"
+              label={p.nickname}
+              selected={
+                selected?.kind === "player" && selected.playerId === p.id
+              }
+              onClick={() =>
+                setSelected({ kind: "player", playerId: p.id })
+              }
+            />
+          ))}
+        </div>
+      </div>
+      <button
+        className="btn-pixel btn-pixel--ember w-full rounded-md"
+        disabled={!selected || busy}
+        onClick={() => selected && onPick(selected)}
+      >
+        {busy ? "..." : label ? `Trocar: ${label}` : "Trocar em segredo"}
+      </button>
+    </div>
   );
 }

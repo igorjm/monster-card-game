@@ -179,16 +179,37 @@ describe("applyNightAction", () => {
     expect(next.currentRoles.p2).toBe("vampiro");
   });
 
-  it("vampiro cannot swap with the center", () => {
+  it("vampiro can swap with a center card", () => {
     const state = fixedState(
       ["vampiro", "lobisomem", "aldeao"],
       ["mumia", "bruxa", "zumbi"],
     );
+    const { state: next, info } = applyNightAction(
+      state,
+      "p1",
+      { type: "vampiro_swap", target: { kind: "center", index: 1 } },
+      at(state, 82),
+    );
+    expect(next.currentRoles.p1).toBe("bruxa");
+    expect(next.center).toEqual(["mumia", "vampiro", "zumbi"]);
+    expect(info[0]).toEqual({
+      kind: "trocou",
+      target: { kind: "center", index: 1 },
+      newRole: "bruxa",
+    });
+  });
+
+  it("vampiro cannot swap with an empty center seat", () => {
+    const state = fixedState(
+      ["vampiro", "lobisomem", "aldeao"],
+      ["mumia", "bruxa", "zumbi"],
+    );
+    state.center = ["mumia", null, "zumbi"];
     expect(() =>
       applyNightAction(
         state,
         "p1",
-        { type: "vampiro_swap", target: { kind: "center", index: 0 } },
+        { type: "vampiro_swap", target: { kind: "center", index: 1 } },
         at(state, 82),
       ),
     ).toThrow(ActionError);

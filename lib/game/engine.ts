@@ -252,9 +252,15 @@ export function applyNightAction(
     case "vampiro_swap": {
       const target = action.target;
       if (target.kind === "center") {
-        throw new ActionError(
-          "O vampiro só troca com outro jogador (não com o centro).",
-        );
+        const idx = target.index;
+        if (idx < 0 || idx >= next.center.length || next.center[idx] == null) {
+          throw new ActionError("Carta do centro inválida.");
+        }
+        const newRole = next.center[idx]!;
+        next.center[idx] = next.currentRoles[actorId];
+        next.currentRoles[actorId] = newRole;
+        give({ kind: "trocou", target, newRole });
+        break;
       }
       if (target.playerId === actorId) {
         throw new ActionError("Você não pode trocar consigo mesmo.");

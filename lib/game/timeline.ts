@@ -45,7 +45,7 @@ export const NIGHT_TIMELINE: TimelineSegment[] = [
     start: 26.16,
     end: 43.94,
     narration: "Acorde, bruxa, preveja o futuro de alguém.",
-    actorPrompt: "Escolha um jogador para espiar a carta.",
+    actorPrompt: "Espie um jogador. Observe o cemitério (só o verso).",
   },
   {
     key: "lobisomem",

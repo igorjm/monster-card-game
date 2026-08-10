@@ -2,7 +2,7 @@
  * Caches the app shell + static art/audio for installability and faster loads.
  * Multiplayer APIs always go to the network.
  */
-const CACHE = "monstros-v3";
+const CACHE = "monstros-v4";
 const PRECACHE = [
   "/",
   "/offline",
@@ -12,6 +12,7 @@ const PRECACHE = [
   "/art/logo.png",
   "/art/card-back.png",
   "/art/aldeao.png",
+  "/art/lavrador.png",
   "/art/bruxa.png",
   "/art/cacador.png",
   "/art/esqueleto.png",
@@ -80,6 +81,9 @@ self.addEventListener("fetch", (event) => {
 
   // Never cache API / realtime — always network
   if (url.pathname.startsWith("/api/")) return;
+
+  // Vercel Analytics / Speed Insights must hit the network uncached
+  if (url.pathname.startsWith("/_vercel/")) return;
 
   // Navigations: network first, offline fallback
   if (request.mode === "navigate") {

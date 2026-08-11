@@ -34,16 +34,19 @@ type ParticipantTile = {
 
 /**
  * LiveKit A/V for talk phases (lobby, discussion, voting, results).
- * Mic on by default; camera opt-in. Kept mounted across day phases; tears
- * down on unmount when night starts.
+ * Mic on by default; camera opt-in. Stays connected through night in a
+ * dormant (muted) state so the browser does not re-prompt for devices.
  */
 export function DiscussionVoice({
   view,
   paused = false,
+  dormant = false,
   variant = "talk",
 }: {
   view: RoomView;
   paused?: boolean;
+  /** Night: mute everyone, hide UI, keep the LiveKit session alive. */
+  dormant?: boolean;
   /** Label only — must not remount / reconnect when it changes. */
   variant?: "lobby" | "talk";
 }) {
@@ -56,8 +59,10 @@ export function DiscussionVoice({
   const [videoById, setVideoById] = useState<Record<string, Track>>({});
   const roomRef = useRef<Room | null>(null);
   const audioEls = useRef<Map<string, HTMLAudioElement>>(new Map());
-  /** User preference — stays true unless they mute. Pause does not clear it. */
+  /** User preference — stays true unless they mute. Pause/dormant do not clear it. */
   const wantMicRef = useRef(true);
+  const wantCamRef = useRef(false);
+  const wasDormantRef = useRef(dormant);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +73,10 @@ export function DiscussionVoice({
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
+      },
+      publishDefaults: {
+        // Keep the mic device open when muted so dawn restore doesn't re-prompt.
+        stopMicTrackOnMute: false,
       },
     });
     roomRef.current = room;
@@ -135,6 +144,11 @@ export function DiscussionVoice({
           el.setAttribute("playsinline", "true");
           document.body.appendChild(el);
           audioEls.current.set(key, el);
+        }
+        // Night dormancy: never let remote audio leak while eyes are closed.
+        el.muted = wasDormantRef.current;
+        if (wasDormantRef.current) {
+          el.pause();
         }
       } else if (track.kind === Track.Kind.Video) {
         setVideoTrack(participant.identity, track);
@@ -223,22 +237,30 @@ export function DiscussionVoice({
         duckAmbientForVoice();
         duckedAmbient = true;
 
-        // Camera stays off until the player opts in.
+        // Camera stays off until the player opts in (restored after night via wantCamRef).
         await room.localParticipant.setCameraEnabled(false).catch(() => {});
         setCamOn(false);
 
-        // Mic on by default; browsers may require a tap for permission.
-        try {
-          await room.localParticipant.setMicrophoneEnabled(true);
-          if (cancelled) return;
-          wantMicRef.current = true;
-          setMicOn(true);
-          setNeedsMicGesture(false);
-        } catch {
+        if (wasDormantRef.current) {
+          // Joined during night (or reconnect): stay muted; prefs apply at dawn.
           await room.localParticipant.setMicrophoneEnabled(false).catch(() => {});
-          if (cancelled) return;
           setMicOn(false);
-          setNeedsMicGesture(true);
+        } else {
+          // Mic on by default; browsers may require a tap for permission.
+          try {
+            await room.localParticipant.setMicrophoneEnabled(true);
+            if (cancelled) return;
+            wantMicRef.current = true;
+            setMicOn(true);
+            setNeedsMicGesture(false);
+          } catch {
+            await room.localParticipant
+              .setMicrophoneEnabled(false)
+              .catch(() => {});
+            if (cancelled) return;
+            setMicOn(false);
+            setNeedsMicGesture(true);
+          }
         }
 
         setStatus("connected");
@@ -269,13 +291,71 @@ export function DiscussionVoice({
       void shutdownLiveKitMedia();
     };
     // Reconnect only when the game room changes — stay joined across
-    // discussion → voting → results → lobby until night unmounts us.
+    // lobby → night (dormant) → discussion → voting → results.
   }, [view.code]);
 
-  // Host pause → mute mic + cam; restore mic only when unpaused (never auto-restore cam).
+  // Night dormancy: mute local + remote without disconnecting (keeps permissions).
   useEffect(() => {
     const room = roomRef.current;
+    const entering = dormant && !wasDormantRef.current;
+    const leaving = !dormant && wasDormantRef.current;
+    wasDormantRef.current = dormant;
+
+    for (const el of audioEls.current.values()) {
+      el.muted = dormant;
+      if (dormant) el.pause();
+      else void el.play().catch(() => {});
+    }
+
     if (!room || status !== "connected") return;
+
+    if (entering || dormant) {
+      void room.localParticipant.setMicrophoneEnabled(false).then(() => {
+        setMicOn(false);
+      });
+      void room.localParticipant.setCameraEnabled(false).then(() => {
+        setCamOn(false);
+        setVideoById((prev) => {
+          const id = room.localParticipant.identity;
+          if (!(id in prev)) return prev;
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      });
+      return;
+    }
+
+    if (!leaving || paused) return;
+
+    if (wantMicRef.current) {
+      void room.localParticipant
+        .setMicrophoneEnabled(true)
+        .then(() => {
+          setMicOn(true);
+          setNeedsMicGesture(false);
+        })
+        .catch(() => {
+          setNeedsMicGesture(true);
+        });
+    }
+    if (wantCamRef.current) {
+      void room.localParticipant
+        .setCameraEnabled(true)
+        .then(() => {
+          setCamOn(true);
+        })
+        .catch(() => {
+          wantCamRef.current = false;
+          setCamOn(false);
+        });
+    }
+  }, [dormant, paused, status]);
+
+  // Host pause → mute mic + cam; restore prefs when unpaused (skip during night).
+  useEffect(() => {
+    const room = roomRef.current;
+    if (!room || status !== "connected" || dormant) return;
 
     if (paused) {
       if (micOn) {
@@ -309,11 +389,22 @@ export function DiscussionVoice({
           setNeedsMicGesture(true);
         });
     }
-  }, [paused, micOn, camOn, status, needsMicGesture]);
+    if (wantCamRef.current && !camOn) {
+      void room.localParticipant
+        .setCameraEnabled(true)
+        .then(() => {
+          setCamOn(true);
+        })
+        .catch(() => {
+          wantCamRef.current = false;
+          setCamOn(false);
+        });
+    }
+  }, [paused, micOn, camOn, status, needsMicGesture, dormant]);
 
   async function setMic(next: boolean) {
     const room = roomRef.current;
-    if (!room || status !== "connected" || paused) return;
+    if (!room || status !== "connected" || paused || dormant) return;
     try {
       await room.localParticipant.setMicrophoneEnabled(next);
       wantMicRef.current = next;
@@ -332,9 +423,10 @@ export function DiscussionVoice({
 
   async function setCam(next: boolean) {
     const room = roomRef.current;
-    if (!room || status !== "connected" || paused) return;
+    if (!room || status !== "connected" || paused || dormant) return;
     try {
       await room.localParticipant.setCameraEnabled(next);
+      wantCamRef.current = next;
       setCamOn(next);
       if (!next) {
         setVideoById((prev) => {
@@ -347,6 +439,7 @@ export function DiscussionVoice({
       }
       setError(null);
     } catch (e) {
+      wantCamRef.current = false;
       setCamOn(false);
       setError(
         e instanceof Error
@@ -354,6 +447,10 @@ export function DiscussionVoice({
           : "Não foi possível acessar a câmera.",
       );
     }
+  }
+
+  if (dormant) {
+    return null;
   }
 
   if (status === "unavailable") {

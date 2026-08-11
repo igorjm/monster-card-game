@@ -15,8 +15,8 @@ export function livekitUrl(): string {
 }
 
 /**
- * One LiveKit room per game room. Stays joined from discussion through
- * voting, results, and lobby; torn down when the next night starts.
+ * One LiveKit room per game room. Stays joined for the whole visit
+ * (muted during night); torn down when the player leaves.
  */
 export function voiceRoomName(code: string): string {
   return `monstros-${code.toUpperCase()}`;

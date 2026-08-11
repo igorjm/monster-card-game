@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 
 /**
  * POST /api/rooms/[code]/voice — Body: { token }
- * Returns a LiveKit JWT for talk phases (everything except night).
+ * Returns a LiveKit JWT for the room visit (including a muted night session).
  */
 export async function POST(
   req: Request,
@@ -33,9 +33,8 @@ export async function POST(
     const room = await loadRoom(code);
     const player = findPlayerByToken(room, token);
 
-    if (room.phase === "noite") {
-      throw new ApiError("A voz fica muda durante a noite.");
-    }
+    // Night is allowed: clients keep a muted LiveKit session so dawn
+    // does not re-prompt for microphone/camera permission.
 
     const roomName = voiceRoomName(room.code);
     const jwt = await createVoiceToken({

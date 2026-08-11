@@ -63,8 +63,9 @@ export const ROLES: Record<Role, RoleMeta> = {
     letter: "L",
     team: "lobisomens",
     description:
-      "Reconhece os outros lobisomens e olha as cartas do centro só no seu turno. Memorize — depois elas viram de novo!",
-    nightHint: "Veja seus companheiros e as cartas que restam no centro. Memorize!",
+      "Reconhece os outros lobisomens e olha as cartas do centro só no seu turno. Com 2 lobisomens jogadores, usam cam/mic em privado na alcateia. Memorize — depois elas viram de novo!",
+    nightHint:
+      "Veja a alcateia, o cemitério e combinem o plano. Memorize!",
     art: "/art/lobisomem.png",
     hasAction: false,
   },

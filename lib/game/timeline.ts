@@ -52,7 +52,8 @@ export const NIGHT_TIMELINE: TimelineSegment[] = [
     start: 43.94,
     end: 60.34,
     narration: "Acorde, lobisomem, forme sua alcateia.",
-    actorPrompt: "Veja seus companheiros e as cartas do centro.",
+    actorPrompt:
+      "Veja seus companheiros (cam/mic da alcateia) e as cartas do centro.",
   },
   {
     key: "zumbi",

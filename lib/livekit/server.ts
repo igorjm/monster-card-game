@@ -15,11 +15,16 @@ export function livekitUrl(): string {
 }
 
 /**
- * One LiveKit room per game room. Stays joined for the whole visit
- * (muted during night); torn down when the player leaves.
+ * Main village voice room — whole visit (muted during night).
+ * Werewolves use a separate pack room during their night window.
  */
 export function voiceRoomName(code: string): string {
   return `monstros-${code.toUpperCase()}`;
+}
+
+/** Private werewolf conspiracy room (only during the lobisomem night window). */
+export function wolfVoiceRoomName(code: string): string {
+  return `monstros-${code.toUpperCase()}-wolves`;
 }
 
 export async function createVoiceToken(opts: {

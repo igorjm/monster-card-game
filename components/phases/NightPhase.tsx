@@ -23,6 +23,7 @@ import { PeekCard } from "@/components/PeekCard";
 import { AppShell } from "@/components/AppShell";
 import { HostPauseButton, PausedBanner } from "@/components/HostPauseButton";
 import { RevealedGraveyardRow, GraveyardRow } from "@/components/GraveyardRow";
+import { WolfPackVoice } from "@/components/WolfPackVoice";
 
 const NIGHT_SOUND_KEY = "monstros:night-sound";
 
@@ -217,6 +218,16 @@ export function NightPhase({
 
   const myRole = game.yourRole;
   const chainRole = game.pendingChain;
+  const wolfInfo = game.yourInfo.find((i) => i.kind === "lobisomens");
+  const wolfPeerIds =
+    wolfInfo?.kind === "lobisomens"
+      ? wolfInfo.wolfIds.filter((id) => id !== view.you.id)
+      : [];
+  const showWolfPack =
+    myRole === "lobisomem" &&
+    segment?.key === "lobisomem" &&
+    wolfPeerIds.length > 0;
+
   // Which role's action UI should be shown right now?
   const activeActionRole: Role | null =
     segment && segment.key === myRole && ROLES[myRole].hasAction && !game.hasActed
@@ -287,6 +298,14 @@ export function NightPhase({
         <p className="text-parchment-dim">Sua carta (toque para mostrar/esconder)</p>
         <PeekCard role={myRole} />
       </section>
+
+      {showWolfPack && (
+        <WolfPackVoice
+          view={view}
+          paused={paused}
+          peerIds={wolfPeerIds}
+        />
+      )}
 
       {activeActionRole && !paused && (
         <ActionPanel

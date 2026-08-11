@@ -1,18 +1,22 @@
 import { NextResponse } from "next/server";
 import { ApiError, findPlayerByToken, loadRoom } from "@/lib/api/room-store";
 import { errorResponse } from "@/lib/api/respond";
+import { elapsedNightSeconds } from "@/lib/game/engine";
+import { segmentForRole, WINDOW_GRACE_SECONDS } from "@/lib/game/timeline";
 import {
   createVoiceToken,
   livekitConfigured,
   livekitUrl,
   voiceRoomName,
+  wolfVoiceRoomName,
 } from "@/lib/livekit/server";
 
 export const runtime = "nodejs";
 
 /**
- * POST /api/rooms/[code]/voice — Body: { token }
- * Returns a LiveKit JWT for the room visit (including a muted night session).
+ * POST /api/rooms/[code]/voice — Body: { token, channel?: "main" | "wolves" }
+ * - main: village A/V (including muted night keep-alive)
+ * - wolves: private pack room (only during lobisomem window, 2+ player wolves)
  */
 export async function POST(
   req: Request,
@@ -27,16 +31,44 @@ export async function POST(
     }
 
     const { code } = await ctx.params;
-    const { token } = (await req.json()) as { token?: string };
-    if (!token) throw new ApiError("Token ausente.");
+    const body = (await req.json()) as {
+      token?: string;
+      channel?: "main" | "wolves";
+    };
+    if (!body.token) throw new ApiError("Token ausente.");
 
     const room = await loadRoom(code);
-    const player = findPlayerByToken(room, token);
+    const player = findPlayerByToken(room, body.token);
+    const channel = body.channel === "wolves" ? "wolves" : "main";
 
-    // Night is allowed: clients keep a muted LiveKit session so dawn
-    // does not re-prompt for microphone/camera permission.
+    if (channel === "wolves") {
+      if (room.phase !== "noite" || !room.game) {
+        throw new ApiError("A alcateia só se encontra durante a noite.");
+      }
+      if (room.game.originalRoles[player.id] !== "lobisomem") {
+        throw new ApiError("Só lobisomens entram na alcateia.");
+      }
+      const wolfPlayerIds = Object.entries(room.game.originalRoles)
+        .filter(([, role]) => role === "lobisomem")
+        .map(([id]) => id);
+      if (wolfPlayerIds.length < 2) {
+        throw new ApiError("Não há outro lobisomem jogador nesta partida.");
+      }
+      const elapsed = elapsedNightSeconds(room.game);
+      const wolfSeg = segmentForRole("lobisomem");
+      if (
+        !wolfSeg ||
+        elapsed < wolfSeg.start ||
+        elapsed > wolfSeg.end + WINDOW_GRACE_SECONDS
+      ) {
+        throw new ApiError("A janela dos lobisomens já passou.");
+      }
+    }
 
-    const roomName = voiceRoomName(room.code);
+    const roomName =
+      channel === "wolves"
+        ? wolfVoiceRoomName(room.code)
+        : voiceRoomName(room.code);
     const jwt = await createVoiceToken({
       roomName,
       identity: player.id,
@@ -47,6 +79,7 @@ export async function POST(
       url: livekitUrl(),
       token: jwt,
       roomName,
+      channel,
     });
   } catch (e) {
     return errorResponse(e);

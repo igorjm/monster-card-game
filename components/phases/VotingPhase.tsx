@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
 import type { RoomView } from "@/lib/api/views";
-import { CardBack } from "@/components/RoleCard";
 import { AppShell } from "@/components/AppShell";
 
 export function VotingPhase({
@@ -55,30 +54,45 @@ export function VotingPhase({
         </p>
       </header>
 
-      <div className="scroll-cards flex justify-start gap-3 overflow-x-auto pb-1 sm:flex-wrap sm:justify-center">
-        {targets.map((p) => {
+      <ul className="panel-pixel flex flex-col gap-2 rounded-lg p-3">
+        {targets.map((p, i) => {
           const isSelected = selected === p.id || game.yourVote === p.id;
           const dimmed = voted && game.yourVote !== p.id;
           return (
-            <div
-              key={p.id}
-              className={`relative ${dimmed ? "opacity-40" : ""}`}
-            >
-              <CardBack
-                size="md"
-                label={p.nickname}
-                selected={isSelected}
-                onClick={voted || busy ? undefined : () => setSelected(p.id)}
-              />
-              {p.hasVoted && (
-                <span className="font-title absolute -right-1 -top-1 rounded-full border-2 border-grave bg-blood px-1.5 text-[0.45rem] text-parchment">
-                  VOTOU
+            <li key={p.id}>
+              <button
+                type="button"
+                disabled={voted || busy}
+                onClick={() => setSelected(p.id)}
+                className={`flex w-full items-center gap-3 rounded-md border-2 px-3 py-3 text-left transition-transform active:scale-[0.99] ${
+                  isSelected
+                    ? "border-ember bg-night-card pulse-glow"
+                    : "border-night-card bg-grave"
+                } ${dimmed ? "opacity-40" : ""} ${
+                  voted || busy ? "cursor-default" : ""
+                }`}
+              >
+                <span className="font-title w-5 shrink-0 text-center text-[0.55rem] text-ember">
+                  {i + 1}
                 </span>
-              )}
-            </div>
+                <span className="font-title flex-1 truncate text-[0.7rem] uppercase text-parchment">
+                  {p.nickname}
+                </span>
+                {p.hasVoted && (
+                  <span className="font-title shrink-0 rounded-full border-2 border-grave bg-blood px-1.5 py-0.5 text-[0.45rem] text-parchment">
+                    VOTOU
+                  </span>
+                )}
+                {isSelected && (
+                  <span className="font-title shrink-0 text-[0.5rem] text-ember">
+                    {voted ? "SEU VOTO" : "●"}
+                  </span>
+                )}
+              </button>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
       {!voted && (
         <button

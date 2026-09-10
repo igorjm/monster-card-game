@@ -14,6 +14,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "db:network": "docker network create -o com.docker.network.bridge.host_binding_ipv4=127.0.0.1 monster-local",
+    "db:start": "supabase start --network-id monster-local",
+    "db:status": "supabase status --output env",
+    "db:reset": "supabase db reset --local",
+    "db:stop": "supabase stop --project-id monster",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run"
@@ -35,6 +40,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "supabase": "2.117.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"

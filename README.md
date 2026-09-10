@@ -114,15 +114,26 @@ supabase/schema.sql        # Tabela rooms + RLS
 
 ## Rodando localmente
 
-Pré-requisitos: Node 22+, projeto [Supabase](https://supabase.com).
+Pré-requisitos: Node 22+ e Docker Desktop (ou runtime compatível). O ambiente de
+desenvolvimento usa um Supabase completamente local; não é necessário apontar
+para o banco de produção.
 
 ```bash
 npm install
-cp .env.example .env.local
-# Preencha as 3 variáveis (URL, publishable key, secret key)
-# Aplique supabase/schema.sql no SQL Editor do Supabase
+npm run db:network # somente na primeira vez
+npm run db:start
+npm run db:status
 npm run dev
 ```
+
+Copie `API_URL`, `PUBLISHABLE_KEY` e `SECRET_KEY` mostrados por `db:status` para
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e
+`SUPABASE_SECRET_KEY` em `.env.development.local`. Esse arquivo tem precedência
+sobre `.env.local` no `next dev` e é ignorado pelo Git. O Studio local fica em
+<http://127.0.0.1:55323>.
+
+Use `npm run db:reset` para recriar somente o banco local pelas migrations e
+`npm run db:stop` ao terminar. Nunca use `--linked` nesse fluxo.
 
 | Variável | Uso |
 | --- | --- |
@@ -143,9 +154,10 @@ e `rio-satira` são prévias com copy, paleta, roteiro sincronizado e arte
 temporária gerada pela interface. As prévias aparecem automaticamente no
 desenvolvimento; em produção, exigem `NEXT_PUBLIC_ENABLE_PREVIEW_THEMES=1`.
 
-Antes de rodar esta branch contra um banco existente, aplique a migration em
-[`supabase/migrations/`](supabase/migrations/). Ela adiciona `theme_id` com
-default `monstros`, então versões anteriores do app continuam funcionando.
+As migrations em [`supabase/migrations/`](supabase/migrations/) incluem uma
+baseline idempotente e a alteração aditiva de `theme_id`. Em um deploy futuro,
+elas preservam as tabelas existentes e adicionam a coluna com default
+`monstros`, então versões anteriores do app continuam funcionando.
 
 O contrato, catálogo e critérios editoriais estão em
 [`docs/themes/`](docs/themes/README.md).

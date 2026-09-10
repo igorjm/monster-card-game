@@ -1,0 +1,1 @@
+-- Intentionally empty. Rooms and player statistics are created by test flows.

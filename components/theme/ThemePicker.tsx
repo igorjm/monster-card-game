@@ -31,7 +31,7 @@ export function ThemePicker({
             >
               <span className="font-title block text-[0.58rem] text-parchment">{pack.shortName}</span>
               <span className="mt-1 block text-sm text-parchment-dim">
-                {pack.status === "preview" ? "PRÉVIA · arte temporária" : "COMPLETO"}
+                {pack.status === "preview" ? "PRÉVIA" : "COMPLETO"}
               </span>
             </button>
           );

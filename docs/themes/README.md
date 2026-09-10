@@ -8,7 +8,7 @@ are stable engine keys; the names are presentation.
 
 - [Monstros](./packs/monstros.md) — published baseline
 - [Folclore BR](./packs/folclore-br.md) — preview copy, script, palette, placeholder art
-- [Rio Sátira](./packs/rio-satira.md) — preview copy, script, palette, placeholder art
+- [Rio Sátira](./packs/rio-satira.md) — preview copy, script, palette, and complete draft card art
 
 ## Content backlog
 
@@ -24,4 +24,3 @@ are stable engine keys; the names are presentation.
 Every preview needs original final art, narration audio, captions, licensing
 records, accessibility review, and the named cultural/editorial approval before
 it becomes published.
-

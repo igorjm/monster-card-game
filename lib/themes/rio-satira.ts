@@ -40,7 +40,7 @@ export const rioSatiraTheme: ThemePack = {
       description: "Só quer descobrir quem manda no esquema e trabalhar amanhã.",
       nightHint: "Feche os olhos. Amanhã cedo ainda tem cidade.",
       artSrc: "/themes/rio-satira/art/morador.png",
-      artAlt: "Moradora com um aviso do bairro sob as luzes da cidade à noite",
+      artAlt: "Moradora cansada com contas em um corredor de prédio com vazamento",
     },
     lavrador: {
       name: "Motoboy",
@@ -56,7 +56,7 @@ export const rioSatiraTheme: ThemePack = {
       description: "Guarda uma pasta do Arquivo sem saber o que há dentro.",
       nightHint: "Escolha uma pasta para esconder sem abrir.",
       artSrc: "/themes/rio-satira/art/olheiro.png",
-      artAlt: "Olheiro com binóculo abaixado e uma pasta lacrada",
+      artAlt: "Olheiro com binóculo e rádio sobre uma laje inacabada à noite",
     },
     bruxa: {
       name: "Tia do Zap",
@@ -64,7 +64,7 @@ export const rioSatiraTheme: ThemePack = {
       description: "Descobre a ficha de alguém e vê quais pastas sumiram, antes de encaminhar sem contexto.",
       nightHint: "Confira uma pessoa e conte as pastas no Arquivo.",
       artSrc: "/themes/rio-satira/art/tia-do-zap.png",
-      artAlt: "Tia do Zap lendo uma mensagem no celular na varanda",
+      artAlt: "Tia do Zap cercada por alertas enquanto encaminha mensagens na cozinha",
     },
     lobisomem: {
       name: "Miliciano",
@@ -80,7 +80,7 @@ export const rioSatiraTheme: ThemePack = {
       description: "Não age à noite e monetiza o cancelamento se receber os votos.",
       nightHint: "Prepare a retratação e espere a timeline acordar.",
       artSrc: "/themes/rio-satira/art/influencer.png",
-      artAlt: "Influencer gravando diante de um celular e uma luz circular",
+      artAlt: "Influencer posando diante de um celular rachado e uma luz circular na laje",
     },
     esqueleto: {
       name: "Comentarista",
@@ -88,7 +88,7 @@ export const rioSatiraTheme: ThemePack = {
       description: "Não age à noite e vence se a cidade transformar opinião em sentença.",
       nightHint: "Guarde o palpite até o debate.",
       artSrc: "/themes/rio-satira/art/comentarista.png",
-      artAlt: "Comentarista com microfone e fichas num estúdio noturno",
+      artAlt: "Comentarista apontando para imagens de crime em um estúdio sensacionalista",
     },
     zumbi: {
       name: "Laranja",
@@ -96,7 +96,7 @@ export const rioSatiraTheme: ThemePack = {
       description: "Assume uma ficha do Arquivo e passa a agir como ela.",
       nightHint: "Escolha a ficha que vai ficar no seu nome.",
       artSrc: "/themes/rio-satira/art/laranja.png",
-      artAlt: "Laranja apreensivo com várias pastas lacradas num arquivo",
+      artAlt: "Laranja apreensivo assinando papéis sob sombras e fitas vermelhas",
     },
     vampiro: {
       name: "Cabo Eleitoral",
@@ -104,7 +104,7 @@ export const rioSatiraTheme: ThemePack = {
       description: "Troca sua ficha com alguém ou com uma pasta do Arquivo em segredo.",
       nightHint: "Troque duas versões antes do fechamento da edição.",
       artSrc: "/themes/rio-satira/art/cabo-eleitoral.png",
-      artAlt: "Cabo eleitoral trocando duas pastas douradas numa sala de campanha fictícia",
+      artAlt: "Cabo eleitoral ao telefone distribuindo envelopes numa sala de campanha fictícia",
     },
   },
   teams: {

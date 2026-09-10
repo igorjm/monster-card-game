@@ -32,8 +32,11 @@ export async function apiPost<T>(path: string, body: object): Promise<T> {
   return data as T;
 }
 
-export async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(path);
+export async function apiGet<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const res = await fetch(path, { cache: "no-store", ...init });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Erro inesperado.");
   return data as T;

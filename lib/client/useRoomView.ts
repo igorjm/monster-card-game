@@ -16,35 +16,65 @@ export interface RoomConnection {
 }
 
 export function useRoomView(code: string): RoomConnection {
-  const [view, setView] = useState<RoomView | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [clockOffsetMs, setClockOffsetMs] = useState(0);
-  const fetchingRef = useRef(false);
+  const roomCode = code.toUpperCase();
+  const [snapshot, setSnapshot] = useState<{
+    code: string;
+    view: RoomView;
+    clockOffsetMs: number;
+  } | null>(null);
+  const [failure, setFailure] = useState<{
+    code: string;
+    message: string;
+  } | null>(null);
+  const requestRef = useRef<{
+    id: number;
+    controller: AbortController;
+  } | null>(null);
+  const nextRequestIdRef = useRef(0);
 
   const refresh = useCallback(async () => {
-    if (fetchingRef.current) return;
-    fetchingRef.current = true;
+    requestRef.current?.controller.abort();
+    const request = {
+      id: ++nextRequestIdRef.current,
+      controller: new AbortController(),
+    };
+    requestRef.current = request;
+
     try {
       const token = getPlayerToken();
       const next = await apiGet<RoomView>(
-        `/api/rooms/${code}/view?token=${encodeURIComponent(token)}`,
+        `/api/rooms/${roomCode}/view?token=${encodeURIComponent(token)}`,
+        { signal: request.controller.signal },
       );
-      setClockOffsetMs(new Date(next.serverNow).getTime() - Date.now());
-      setView(next);
-      setError(null);
+      if (requestRef.current?.id !== request.id) return;
+
+      setSnapshot({
+        code: roomCode,
+        view: next,
+        clockOffsetMs: new Date(next.serverNow).getTime() - Date.now(),
+      });
+      setFailure(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro inesperado.");
+      if (request.controller.signal.aborted) return;
+      if (requestRef.current?.id !== request.id) return;
+
+      setFailure({
+        code: roomCode,
+        message: e instanceof Error ? e.message : "Erro inesperado.",
+      });
     } finally {
-      fetchingRef.current = false;
+      if (requestRef.current?.id === request.id) {
+        requestRef.current = null;
+      }
     }
-  }, [code]);
+  }, [roomCode]);
 
   useEffect(() => {
     queueMicrotask(() => void refresh());
 
     const supabase = browserClient();
     const channel = supabase
-      .channel(`room:${code.toUpperCase()}`)
+      .channel(`room:${roomCode}`)
       .on("broadcast", { event: "update" }, () => {
         void refresh();
       })
@@ -54,9 +84,19 @@ export function useRoomView(code: string): RoomConnection {
 
     return () => {
       clearInterval(interval);
+      requestRef.current?.controller.abort();
+      requestRef.current = null;
       void supabase.removeChannel(channel);
     };
-  }, [code, refresh]);
+  }, [roomCode, refresh]);
 
-  return { view, error, clockOffsetMs, refresh };
+  const currentSnapshot = snapshot?.code === roomCode ? snapshot : null;
+  const error = failure?.code === roomCode ? failure.message : null;
+
+  return {
+    view: currentSnapshot?.view ?? null,
+    error,
+    clockOffsetMs: currentSnapshot?.clockOffsetMs ?? 0,
+    refresh,
+  };
 }

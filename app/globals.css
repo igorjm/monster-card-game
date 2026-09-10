@@ -116,6 +116,13 @@ img.pixel-art {
   background: var(--color-night-card);
 }
 
+.btn-pixel--icon {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+}
+
 /* Panel with pixel frame */
 .panel-pixel {
   background: var(--color-night-soft);

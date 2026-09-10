@@ -6,12 +6,15 @@ import { apiPost, getPlayerToken } from "@/lib/client/identity";
 import { leaveRoom } from "@/lib/client/leaveRoom";
 import { shutdownLiveKitMedia } from "@/lib/client/livekitMedia";
 import { buildDeck } from "@/lib/game/engine";
-import { ROLES, TEAMS } from "@/lib/game/roles";
+import { ROLE_RULES } from "@/lib/game/mechanics";
 import { MIN_PLAYERS, type Role } from "@/lib/game/types";
 import type { RoomView } from "@/lib/api/views";
 import { RoleCard } from "@/components/RoleCard";
 import { CardStrip } from "@/components/CardStrip";
 import { AppShell } from "@/components/AppShell";
+import { ThemePicker } from "@/components/theme/ThemePicker";
+import { useTheme } from "@/components/theme/ThemeProvider";
+import { formatThemeText } from "@/lib/themes/registry";
 
 const DISCUSSION_OPTIONS = [
   { seconds: 300, label: "5 min" },
@@ -38,6 +41,7 @@ export function LobbyPhase({
   view: RoomView;
   refresh: () => Promise<void>;
 }) {
+  const theme = useTheme();
   const router = useRouter();
   const fineHover = useFineHover();
   const [discussionSeconds, setDiscussionSeconds] = useState(
@@ -46,6 +50,7 @@ export function LobbyPhase({
   const [busy, setBusy] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [themeBusy, setThemeBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [inspected, setInspected] = useState<{
     role: Role;
@@ -102,9 +107,29 @@ export function LobbyPhase({
   }
 
   function shareWhatsApp() {
-    const text = `Vem jogar Lobisomem por Uma Noite — Monstros!\nSala ${view.code}: ${shareUrl()}`;
+    const text = formatThemeText(theme.brand.shareText, {
+      code: view.code,
+      url: shareUrl(),
+    });
     const href = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(href, "_blank", "noopener,noreferrer");
+  }
+
+  async function changeTheme(themeId: string) {
+    if (themeId === view.themeId) return;
+    setThemeBusy(true);
+    setError(null);
+    try {
+      await apiPost(`/api/rooms/${view.code}/theme`, {
+        token: getPlayerToken(),
+        themeId,
+      });
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro inesperado.");
+    } finally {
+      setThemeBusy(false);
+    }
   }
 
   return (
@@ -204,7 +229,7 @@ export function LobbyPhase({
                   key={`${role}-${i}`}
                   type="button"
                   aria-pressed={selected}
-                  aria-label={`${ROLES[role].name}. ${fineHover ? "Passe o mouse para ver a ação." : "Toque para ver a ação."}`}
+                  aria-label={`${theme.roles[role].name}. ${fineHover ? "Passe o mouse para ver a ação." : "Toque para ver a ação."}`}
                   className={`shrink-0 rounded-lg p-0.5 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ember ${
                     selected ? "scale-[1.04]" : "active:scale-95"
                   }`}
@@ -251,16 +276,22 @@ export function LobbyPhase({
         </div>
         <p className="mt-4 text-sm leading-snug text-parchment-dim">
           {view.players.length >= MIN_PLAYERS ? view.players.length : MIN_PLAYERS}{" "}
-          jogadores + 3 cartas no centro · arraste para ver todas
+          jogadores + 3 cartas em {theme.terminology.center} · arraste para ver todas
         </p>
         <p className="mt-2 text-sm leading-snug text-parchment-dim">
-          Baralho oficial: com 3, um lobisomem e múmia ou esqueleto; com 4–5,
-          dois lobisomens; a partir de 5 entram múmia e esqueleto (aldeões só
-          com 6–7).
+          {theme.rulesCopy.deckSummary}
         </p>
       </section>
 
       {view.you.isHost ? (
+        <div className="flex flex-col gap-4">
+        <section className="panel-pixel rounded-lg p-4">
+          <ThemePicker
+            value={view.themeId}
+            disabled={themeBusy || busy || leaving}
+            onChange={(themeId) => void changeTheme(themeId)}
+          />
+        </section>
         <section className="panel-pixel rounded-lg p-4">
           <h2 className="font-title mb-3 text-xs text-parchment">
             TEMPO DE DISCUSSÃO
@@ -291,6 +322,7 @@ export function LobbyPhase({
             <p className="shake mt-3 text-center text-blood-bright">{error}</p>
           )}
         </section>
+        </div>
       ) : (
         <p className="text-center text-parchment-dim">
           Aguardando o anfitrião começar a partida...
@@ -311,24 +343,21 @@ export function LobbyPhase({
           COMO JOGAR
         </summary>
         <ul className="mt-3 flex flex-col gap-2 text-parchment-dim">
-          <li>1. Cada um recebe uma carta secreta; 3 vão para o centro.</li>
-          <li>2. Durante a noite, cada papel age na ordem: Caçador → Bruxa → Lobisomem → Zumbi → Vampiro.</li>
+          <li>1. {theme.rulesCopy.intro}</li>
+          <li>2. Durante a noite: {theme.roles.cacador.name} → {theme.roles.bruxa.name} → {theme.roles.lobisomem.name} → {theme.roles.zumbi.name} → {theme.roles.vampiro.name}.</li>
           <li>
-            3. O Caçador esconde uma carta do centro sem olhar. O Zumbi remove
-            uma carta do centro e assume o papel. Cartas somem do centro.
+            3. {theme.roles.cacador.name} esconde uma carta sem olhar. {theme.roles.zumbi.name} remove
+            uma carta de {theme.terminology.center} e assume o papel.
           </li>
           <li>4. Ao amanhecer, discutam: quem é o quê?</li>
           <li>
-            5. Todos votam. A carta do Caçador só é revelada no resultado.
+            5. {theme.rulesCopy.voting}
           </li>
           <li className="text-parchment">
-            Mortos-vivos (múmia/esqueleto) vencem se um deles for o mais votado.
-            Aliados vencem se um lobisomem morrer, ou se o Caçador escondeu um
-            lobisomem e a vila não executou o próprio Caçador. Caso contrário,
-            lobisomens vencem. O Zumbi assume outro papel e em si não vence.
+            {theme.rulesCopy.winPriority}
           </li>
-          {Object.values(ROLES).map((r) => (
-            <li key={r.id}>
+          {Object.entries(theme.roles).map(([id, r]) => (
+            <li key={id}>
               <span className="text-ember">{r.name}:</span> {r.description}
             </li>
           ))}
@@ -348,8 +377,9 @@ function RoleActionPanel({
   dismissible: boolean;
   onClose: () => void;
 }) {
-  const meta = ROLES[role];
-  const team = TEAMS[meta.team];
+  const theme = useTheme();
+  const meta = theme.roles[role];
+  const team = theme.teams[ROLE_RULES[role].team];
   return (
     <div
       className="panel-pixel mt-4 rounded-lg border-ember px-4 py-4 animate-[card-flip-in_0.28s_steps(4)_both]"

@@ -51,3 +51,6 @@ next-env.d.ts
 /img/
 /audio.jpeg
 /docs/reference/
+
+# Supabase CLI local metadata
+/supabase/.temp/

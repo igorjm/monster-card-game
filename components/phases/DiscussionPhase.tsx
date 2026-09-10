@@ -9,6 +9,7 @@ import { HostPauseButton, PausedBanner } from "@/components/HostPauseButton";
 import { NightInfo } from "./NightPhase";
 import { AppShell } from "@/components/AppShell";
 import { GraveyardRow } from "@/components/GraveyardRow";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 export function DiscussionPhase({
   view,
@@ -19,6 +20,7 @@ export function DiscussionPhase({
   clockOffsetMs: number;
   refresh: () => Promise<void>;
 }) {
+  const theme = useTheme();
   const game = view.game!;
   const now = useNow(clockOffsetMs, 500);
   const paused = game.paused;
@@ -78,7 +80,7 @@ export function DiscussionPhase({
 
       <section className="panel-pixel rounded-lg p-4">
         <p className="mb-3 text-center text-parchment-dim">
-          Cemitério
+          {theme.terminology.center}
           {game.centerCount < 3
             ? " — espaço vazio = carta tirada (posição importa)"
             : ""}

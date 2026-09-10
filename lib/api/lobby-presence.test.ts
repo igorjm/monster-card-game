@@ -11,6 +11,7 @@ function lobby(players: Room["players"], hostId?: string): Room {
   return {
     id: "r1",
     code: "ABCD",
+    theme_id: "monstros",
     phase: "lobby",
     host_id: hostId ?? players[0]!.id,
     settings: { discussionSeconds: 300 },

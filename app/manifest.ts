@@ -1,20 +1,21 @@
 import type { MetadataRoute } from "next";
+import { getDefaultThemePack } from "@/lib/themes/registry";
 
 export default function manifest(): MetadataRoute.Manifest {
+  const theme = getDefaultThemePack();
   return {
     id: "/",
-    name: "Lobisomem por Uma Noite — Monstros",
-    short_name: "Monstros",
-    description:
-      "Jogo multiplayer online de dedução social. Descubra quem é o monstro entre vocês!",
+    name: theme.brand.title,
+    short_name: theme.shortName,
+    description: theme.brand.description,
     start_url: "/",
     scope: "/",
     display: "standalone",
     display_override: ["standalone", "minimal-ui", "browser"],
     orientation: "any",
-    background_color: "#14092b",
-    theme_color: "#14092b",
-    lang: "pt-BR",
+    background_color: theme.palette.background,
+    theme_color: theme.palette.background,
+    lang: theme.locale,
     dir: "ltr",
     categories: ["games", "entertainment"],
     prefer_related_applications: false,

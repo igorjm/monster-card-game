@@ -1,13 +1,8 @@
 import { adminClient, broadcastRoomUpdate } from "@/lib/supabase/admin";
 import type { Room } from "@/lib/game/types";
+import { ApiError } from "./errors";
 
-export class ApiError extends Error {
-  status: number;
-  constructor(message: string, status = 400) {
-    super(message);
-    this.status = status;
-  }
-}
+export { ApiError } from "./errors";
 
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ"; // no I/L/O to avoid confusion
 

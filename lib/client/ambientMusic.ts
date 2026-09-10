@@ -1,10 +1,8 @@
 /** Soft lobby / home ambience. Singleton so navigation does not restart the track. */
 
-export const AMBIENT_SRC = "/audio/background.mp3";
-/** Quiet environment bed — not competing with night narration later. */
-export const AMBIENT_VOLUME = 0.18;
-
 let audio: HTMLAudioElement | null = null;
+let activeSrc = "";
+let activeVolume = 0.18;
 let unlocked = false;
 let holders = 0;
 let stopScheduled = false;
@@ -14,11 +12,12 @@ let gestureBound = false;
 let voiceDucks = 0;
 
 function getAudio(): HTMLAudioElement {
-  if (!audio) {
-    audio = new Audio(AMBIENT_SRC);
+  if (!audio || audio.src !== new URL(activeSrc, window.location.href).href) {
+    audio?.pause();
+    audio = new Audio(activeSrc);
     audio.loop = true;
     audio.preload = "auto";
-    audio.volume = AMBIENT_VOLUME;
+    audio.volume = activeVolume;
   }
   return audio;
 }
@@ -44,7 +43,7 @@ function bindGestureUnlock() {
 async function playNow() {
   const el = getAudio();
   clearFade();
-  el.volume = voiceDucks > 0 ? 0 : AMBIENT_VOLUME;
+  el.volume = voiceDucks > 0 ? 0 : activeVolume;
   try {
     await el.play();
     unlocked = true;
@@ -62,7 +61,7 @@ export function duckAmbientForVoice() {
 export function unduckAmbientForVoice() {
   voiceDucks = Math.max(0, voiceDucks - 1);
   if (voiceDucks === 0 && audio && holders > 0) {
-    audio.volume = AMBIENT_VOLUME;
+    audio.volume = activeVolume;
     if (audio.paused) void playNow();
   }
 }
@@ -85,13 +84,15 @@ function fadeOutAndStop() {
       clearFade();
       el.pause();
       el.currentTime = 0;
-      el.volume = AMBIENT_VOLUME;
+      el.volume = activeVolume;
     }
   }, 40);
 }
 
 /** Keep ambience playing while at least one screen wants it (home / lobby). */
-export function acquireAmbient() {
+export function acquireAmbient(src: string, volume: number) {
+  activeSrc = src;
+  activeVolume = volume;
   holders += 1;
   stopScheduled = false;
   if (typeof window === "undefined") return;

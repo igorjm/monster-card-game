@@ -1,4 +1,5 @@
-import { ROLES, buildDeck } from "./roles";
+import { buildDeck } from "./roles";
+import { ROLE_RULES, teamOf } from "./mechanics";
 import {
   CENTER_CARDS,
   type GameResult,
@@ -216,7 +217,7 @@ export function applyNightAction(
           wolfIds: wolfIdsFrom(next),
           center: [...next.center],
         });
-      } else if (ROLES[taken].hasAction && taken !== "zumbi") {
+      } else if (ROLE_RULES[taken].hasAction && taken !== "zumbi") {
         next.pendingChain[actorId] = taken;
       }
       break;
@@ -277,10 +278,6 @@ export function applyNightAction(
   }
 
   return { state: next, info: produced };
-}
-
-export function teamOf(role: Role): Team {
-  return ROLES[role].team;
 }
 
 function baseResult(state: GameState): Omit<GameResult, "deadIds" | "winners"> {

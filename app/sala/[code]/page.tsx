@@ -15,6 +15,7 @@ import { ResultsPhase } from "@/components/phases/ResultsPhase";
 import { AppShell } from "@/components/AppShell";
 import { AmbientMusic } from "@/components/AmbientMusic";
 import { DiscussionVoice } from "@/components/DiscussionVoice";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 export default function RoomPage({
   params,
@@ -41,7 +42,7 @@ export default function RoomPage({
       <AppShell className="items-center justify-center">
         <AmbientMusic />
         <p className="font-title flicker text-sm text-parchment-dim">
-          Entrando na vila...
+          Entrando na sala...
         </p>
       </AppShell>
     );
@@ -59,7 +60,7 @@ export default function RoomPage({
     : "max-w-md md:max-w-lg";
 
   return (
-    <>
+    <ThemeProvider themeId={view.themeId}>
       <AmbientMusic active={beforeMatch} />
       <div className="flex min-h-dvh w-full flex-1 flex-col">
         <div
@@ -101,7 +102,7 @@ export default function RoomPage({
           <ResultsPhase view={view} refresh={refresh} />
         )}
       </div>
-    </>
+    </ThemeProvider>
   );
 }
 

@@ -10,6 +10,7 @@ import {
   voiceRoomName,
   wolfVoiceRoomName,
 } from "@/lib/livekit/server";
+import { getThemePack } from "@/lib/themes/registry";
 
 export const runtime = "nodejs";
 
@@ -38,21 +39,22 @@ export async function POST(
     if (!body.token) throw new ApiError("Token ausente.");
 
     const room = await loadRoom(code);
+    const theme = getThemePack(room.theme_id);
     const player = findPlayerByToken(room, body.token);
     const channel = body.channel === "wolves" ? "wolves" : "main";
 
     if (channel === "wolves") {
       if (room.phase !== "noite" || !room.game) {
-        throw new ApiError("A alcateia só se encontra durante a noite.");
+        throw new ApiError(`${theme.terminology.wolfPack} só se encontra durante a noite.`);
       }
       if (room.game.originalRoles[player.id] !== "lobisomem") {
-        throw new ApiError("Só lobisomens entram na alcateia.");
+        throw new ApiError(`Só ${theme.roles.lobisomem.name} entra em ${theme.terminology.wolfPack}.`);
       }
       const wolfPlayerIds = Object.entries(room.game.originalRoles)
         .filter(([, role]) => role === "lobisomem")
         .map(([id]) => id);
       if (wolfPlayerIds.length < 2) {
-        throw new ApiError("Não há outro lobisomem jogador nesta partida.");
+        throw new ApiError(`Não há outro ${theme.roles.lobisomem.name} nesta partida.`);
       }
       const elapsed = elapsedNightSeconds(room.game);
       const wolfSeg = segmentForRole("lobisomem");
@@ -61,7 +63,7 @@ export async function POST(
         elapsed < wolfSeg.start ||
         elapsed > wolfSeg.end + WINDOW_GRACE_SECONDS
       ) {
-        throw new ApiError("A janela dos lobisomens já passou.");
+        throw new ApiError(`A janela de ${theme.roles.lobisomem.name} já passou.`);
       }
     }
 

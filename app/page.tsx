@@ -16,8 +16,10 @@ import {
 import type { RoomView } from "@/lib/api/views";
 import { AppShell } from "@/components/AppShell";
 import { AmbientMusic } from "@/components/AmbientMusic";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 export default function HomePage() {
+  const theme = useTheme();
   const router = useRouter();
   const { nickname, setNickname } = usePersistedNickname();
   const [code, setCode] = useState("");
@@ -86,18 +88,22 @@ export default function HomePage() {
   return (
     <AppShell className="items-center justify-center gap-6 sm:gap-8">
       <AmbientMusic />
-      <img
-        src="/art/logo.png"
-        alt="Lobisomem por Uma Noite — Monstros"
-        className="pixel-art float-slow w-48 sm:w-64 max-w-full"
-        draggable={false}
-      />
+      {theme.brand.logoSrc ? (
+        <img
+          src={theme.brand.logoSrc}
+          alt={theme.brand.title}
+          className="pixel-art float-slow w-48 sm:w-64 max-w-full"
+          draggable={false}
+        />
+      ) : null}
       <h1 className="font-title flicker text-center text-base sm:text-lg leading-relaxed text-ember">
-        LOBISOMEM
-        <span className="block text-[0.65rem] sm:text-xs text-parchment">
-          POR UMA NOITE
-        </span>
-        <span className="block text-sm text-blood-bright">MONSTROS</span>
+        {theme.brand.eyebrow}
+        {theme.brand.subtitle ? (
+          <span className="block text-[0.65rem] sm:text-xs text-parchment">
+            {theme.brand.subtitle}
+          </span>
+        ) : null}
+        <span className="block text-sm text-blood-bright">{theme.brand.name}</span>
       </h1>
 
       <div className="panel-pixel w-full rounded-lg p-4 sm:p-5">
@@ -187,7 +193,7 @@ export default function HomePage() {
       </div>
 
       <p className="text-center text-parchment-dim">
-        3 a 7 jogadores · uma noite · um monstro entre vocês
+        {theme.brand.tagline}
       </p>
     </AppShell>
   );

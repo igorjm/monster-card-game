@@ -110,6 +110,8 @@ export interface RoomSettings {
 export interface Room {
   id: string;
   code: string;
+  /** Registry-backed presentation pack. Persisted as theme_id in Postgres. */
+  theme_id: string;
   phase: Phase;
   host_id: string;
   settings: RoomSettings;

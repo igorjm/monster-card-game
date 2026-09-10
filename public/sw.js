@@ -1,8 +1,8 @@
-/* Lobisomem Monstros — lightweight service worker
+/* Theme-pack game — lightweight service worker
  * Caches the app shell + static art/audio for installability and faster loads.
  * Multiplayer APIs always go to the network.
  */
-const CACHE = "monstros-v4";
+const CACHE = "theme-packs-v1";
 const PRECACHE = [
   "/",
   "/offline",
@@ -105,6 +105,7 @@ self.addEventListener("fetch", (event) => {
   // Static assets: cache first, then network
   if (
     url.pathname.startsWith("/art/") ||
+    url.pathname.startsWith("/themes/") ||
     url.pathname.startsWith("/audio/") ||
     url.pathname.startsWith("/icons/") ||
     url.pathname.startsWith("/_next/static/")

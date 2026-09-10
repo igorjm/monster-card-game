@@ -85,6 +85,8 @@ O **Zumbi** em si nunca vence — só o papel que ele assumiu à noite.
 - **Next.js 16** (App Router, TypeScript, Tailwind CSS 4) na [Vercel](https://lobisomem-monstros.vercel.app)
 - **Supabase** — Postgres + Realtime (broadcast de “estado mudou”)
 - Motor puro e testável em [`lib/game/`](lib/game/)
+- Packs de apresentação tipados em [`lib/themes/`](lib/themes/) — mesmas regras,
+  nomes/arte/áudio/paleta diferentes por sala
 - Mutações só via API routes com **service role** (server-authoritative)
 
 ```
@@ -112,7 +114,7 @@ supabase/schema.sql        # Tabela rooms + RLS
 
 ## Rodando localmente
 
-Pré-requisitos: Node 20+, projeto [Supabase](https://supabase.com).
+Pré-requisitos: Node 22+, projeto [Supabase](https://supabase.com).
 
 ```bash
 npm install
@@ -129,6 +131,24 @@ npm run dev
 | `SUPABASE_SECRET_KEY` | **Somente servidor** — nunca no browser |
 | `LIVEKIT_URL` | WebSocket LiveKit Cloud (`wss://…`) |
 | `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | Tokens de voz (somente servidor) |
+| `NEXT_PUBLIC_DEFAULT_THEME_ID` | Marca padrão e tema inicial (`monstros` por padrão) |
+| `NEXT_PUBLIC_ENABLE_PREVIEW_THEMES` | Use `1` para liberar packs em prévia na produção |
+| `NEXT_PUBLIC_APP_URL` | URL canônica usada pelos metadados |
+
+## Packs de tema
+
+O anfitrião escolhe o tema no lobby; a escolha é sincronizada com toda a sala e
+fica bloqueada quando a noite começa. `monstros` é o pack publicado. `folclore-br`
+e `rio-satira` são prévias com copy, paleta, roteiro sincronizado e arte
+temporária gerada pela interface. As prévias aparecem automaticamente no
+desenvolvimento; em produção, exigem `NEXT_PUBLIC_ENABLE_PREVIEW_THEMES=1`.
+
+Antes de rodar esta branch contra um banco existente, aplique a migration em
+[`supabase/migrations/`](supabase/migrations/). Ela adiciona `theme_id` com
+default `monstros`, então versões anteriores do app continuam funcionando.
+
+O contrato, catálogo e critérios editoriais estão em
+[`docs/themes/`](docs/themes/README.md).
 
 ```bash
 npm test          # motor do jogo

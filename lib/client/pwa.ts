@@ -1,7 +1,9 @@
 /** PWA install + notification helpers (client-only). */
 
-const INSTALL_DISMISS_KEY = "monstros:install-dismissed";
-const NOTIF_DISMISS_KEY = "monstros:notif-dismissed";
+const INSTALL_DISMISS_KEY = "theme-game:install-dismissed";
+const NOTIF_DISMISS_KEY = "theme-game:notif-dismissed";
+const LEGACY_INSTALL_DISMISS_KEY = "monstros:install-dismissed";
+const LEGACY_NOTIF_DISMISS_KEY = "monstros:notif-dismissed";
 
 export type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -31,7 +33,8 @@ export function isIos(): boolean {
 
 export function wasInstallDismissed(): boolean {
   try {
-    return localStorage.getItem(INSTALL_DISMISS_KEY) === "1";
+    return localStorage.getItem(INSTALL_DISMISS_KEY) === "1" ||
+      localStorage.getItem(LEGACY_INSTALL_DISMISS_KEY) === "1";
   } catch {
     return false;
   }
@@ -47,7 +50,8 @@ export function dismissInstall(): void {
 
 export function wasNotifDismissed(): boolean {
   try {
-    return localStorage.getItem(NOTIF_DISMISS_KEY) === "1";
+    return localStorage.getItem(NOTIF_DISMISS_KEY) === "1" ||
+      localStorage.getItem(LEGACY_NOTIF_DISMISS_KEY) === "1";
   } catch {
     return false;
   }

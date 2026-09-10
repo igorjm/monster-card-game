@@ -9,6 +9,7 @@ import type {
   Room,
   RoomSettings,
 } from "../game/types";
+import { resolveThemeId, type ThemeId } from "../themes/registry";
 
 export interface PublicPlayer {
   id: string;
@@ -22,6 +23,7 @@ export interface PublicPlayer {
 /** Everything a single client is allowed to know. */
 export interface RoomView {
   code: string;
+  themeId: ThemeId;
   phase: Phase;
   settings: RoomSettings;
   serverNow: string;
@@ -109,6 +111,7 @@ export function buildView(
 
   return {
     code: room.code,
+    themeId: resolveThemeId(room.theme_id),
     phase: room.phase,
     settings: room.settings,
     serverNow: new Date().toISOString(),

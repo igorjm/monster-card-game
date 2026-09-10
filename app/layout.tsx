@@ -4,6 +4,8 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { PwaPrompts } from "@/components/PwaPrompts";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { getDefaultThemeId, getDefaultThemePack } from "@/lib/themes/registry";
 import "./globals.css";
 
 const pixelTitle = Press_Start_2P({
@@ -18,31 +20,31 @@ const pixelBody = VT323({
   subsets: ["latin", "latin-ext"],
 });
 
-const APP_URL = "https://lobisomem-monstros.vercel.app";
+const defaultTheme = getDefaultThemePack();
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://lobisomem-monstros.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
-  applicationName: "Monstros",
+  applicationName: defaultTheme.shortName,
   title: {
-    default: "Lobisomem por Uma Noite — Monstros",
-    template: "%s · Monstros",
+    default: defaultTheme.brand.title,
+    template: `%s · ${defaultTheme.shortName}`,
   },
-  description:
-    "Jogo multiplayer online de dedução social. Descubra quem é o lobisomem antes que seja tarde demais!",
+  description: defaultTheme.brand.description,
   keywords: [
-    "lobisomem",
     "one night",
-    "monstros",
     "jogo",
     "multiplayer",
     "dedução",
+    "jogo social",
+    defaultTheme.shortName.toLocaleLowerCase(defaultTheme.locale),
   ],
   authors: [{ name: "Igor Melo" }],
   creator: "Igor Melo",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "Monstros",
+    title: defaultTheme.shortName,
     statusBarStyle: "black-translucent",
   },
   formatDetection: {
@@ -52,16 +54,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pt_BR",
     url: APP_URL,
-    siteName: "Monstros",
-    title: "Lobisomem por Uma Noite — Monstros",
-    description:
-      "Jogo multiplayer online de dedução social. 3 a 7 jogadores, uma noite.",
+    siteName: defaultTheme.shortName,
+    title: defaultTheme.brand.title,
+    description: defaultTheme.brand.description,
     images: [{ url: "/icons/icon-512.png", width: 512, height: 512 }],
   },
   twitter: {
     card: "summary",
-    title: "Lobisomem por Uma Noite — Monstros",
-    description: "Jogo multiplayer online de dedução social.",
+    title: defaultTheme.brand.title,
+    description: defaultTheme.brand.description,
     images: ["/icons/icon-512.png"],
   },
   icons: {
@@ -87,8 +88,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#14092b" },
-    { media: "(prefers-color-scheme: light)", color: "#14092b" },
+    { media: "(prefers-color-scheme: dark)", color: defaultTheme.palette.background },
+    { media: "(prefers-color-scheme: light)", color: defaultTheme.palette.background },
   ],
   colorScheme: "dark",
 };
@@ -103,9 +104,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         className="min-h-dvh flex flex-col bg-night text-parchment font-body overflow-x-hidden"
         suppressHydrationWarning
       >
-        {children}
-        <ServiceWorkerRegister />
-        <PwaPrompts />
+        <ThemeProvider themeId={getDefaultThemeId()}>
+          {children}
+          <ServiceWorkerRegister />
+          <PwaPrompts />
+        </ThemeProvider>
         <Analytics />
         <SpeedInsights />
       </body>

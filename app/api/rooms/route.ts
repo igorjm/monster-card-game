@@ -4,6 +4,7 @@ import { ApiError, generateRoomCode, insertRoom } from "@/lib/api/room-store";
 import { errorResponse } from "@/lib/api/respond";
 import { buildViewResponse } from "@/lib/api/views";
 import type { PlayerInfo } from "@/lib/game/types";
+import { getDefaultThemeId } from "@/lib/themes/registry";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
       try {
         const room = await insertRoom({
           code: generateRoomCode(),
+          theme_id: getDefaultThemeId(),
           phase: "lobby",
           host_id: host.id,
           settings: { discussionSeconds: 300 },

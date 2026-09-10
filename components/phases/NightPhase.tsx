@@ -6,7 +6,6 @@ import { useNow } from "@/lib/client/useNow";
 import {
   checkNightAudio,
   displayCaption,
-  nightAudioSrc,
   speak,
   stopSpeaking,
 } from "@/lib/client/narrator";
@@ -15,7 +14,7 @@ import {
   segmentAt,
   subtitleAt,
 } from "@/lib/game/timeline";
-import { ROLES } from "@/lib/game/roles";
+import { ROLE_RULES } from "@/lib/game/mechanics";
 import type { NightAction, PrivateInfo, Role, SwapTarget } from "@/lib/game/types";
 import type { RoomView } from "@/lib/api/views";
 import { CardBack, RoleCard } from "@/components/RoleCard";
@@ -24,13 +23,15 @@ import { AppShell } from "@/components/AppShell";
 import { HostPauseButton, PausedBanner } from "@/components/HostPauseButton";
 import { RevealedGraveyardRow, GraveyardRow } from "@/components/GraveyardRow";
 import { WolfPackVoice } from "@/components/WolfPackVoice";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
-const NIGHT_SOUND_KEY = "monstros:night-sound";
+const NIGHT_SOUND_KEY = "theme-game:night-sound";
+const LEGACY_NIGHT_SOUND_KEY = "monstros:night-sound";
 
 function preferredNightSoundOn(): boolean {
   if (typeof window === "undefined") return true;
   try {
-    const saved = localStorage.getItem(NIGHT_SOUND_KEY);
+    const saved = localStorage.getItem(NIGHT_SOUND_KEY) ?? localStorage.getItem(LEGACY_NIGHT_SOUND_KEY);
     if (saved === "0") return false;
     if (saved === "1") return true;
   } catch {
@@ -60,6 +61,7 @@ export function NightPhase({
   clockOffsetMs: number;
   refresh: () => Promise<void>;
 }) {
+  const theme = useTheme();
   const game = view.game!;
   const now = useNow(clockOffsetMs);
   const effectiveNow = game.pausedAt
@@ -67,7 +69,8 @@ export function NightPhase({
     : now;
   const elapsed = (effectiveNow - new Date(game.nightStartedAt).getTime()) / 1000;
   const segment = segmentAt(elapsed);
-  const subtitle = subtitleAt(elapsed);
+  const segmentCopy = segment ? theme.narration.segments[segment.key] : undefined;
+  const subtitle = subtitleAt(elapsed, theme.narration.subtitles);
   const paused = game.paused;
 
   const preferredOn = useSyncExternalStore(
@@ -87,7 +90,7 @@ export function NightPhase({
 
   useEffect(() => {
     let cancelled = false;
-    void checkNightAudio().then((ok) => {
+    void checkNightAudio(theme.narration.audioSrc).then((ok) => {
       if (!cancelled) setHasAudioFile(ok);
     });
     return () => {
@@ -96,7 +99,7 @@ export function NightPhase({
       audioRef.current?.pause();
       audioRef.current = null;
     };
-  }, []);
+  }, [theme.narration.audioSrc]);
 
   // Auto-start narration (default on). Browsers may require one tap — show unlock CTA then.
   useEffect(() => {
@@ -111,9 +114,9 @@ export function NightPhase({
     let cancelled = false;
 
     async function boot() {
-      if (hasAudioFile) {
+      if (hasAudioFile && theme.narration.audioSrc) {
         audioRef.current?.pause();
-        const audio = new Audio(nightAudioSrc());
+        const audio = new Audio(theme.narration.audioSrc);
         audio.preload = "auto";
         audio.currentTime = Math.max(0, Math.min(elapsed, NIGHT_TOTAL_SECONDS));
         audioRef.current = audio;
@@ -126,9 +129,9 @@ export function NightPhase({
         }
         return;
       }
-      if (segment && !paused) {
+      if (segment && segmentCopy && !paused) {
         spokenKeyRef.current = segment.key;
-        speak(segment.narration);
+        speak(segmentCopy.narration, theme.narration.ttsLocale);
         if (!cancelled) setNeedsGesture(false);
       }
     }
@@ -139,7 +142,7 @@ export function NightPhase({
     };
     // Only when audio availability / preference changes — not every clock tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasAudioFile, soundOn, playToken]);
+  }, [hasAudioFile, soundOn, playToken, theme.narration.audioSrc, theme.narration.ttsLocale]);
 
   // Werewolves peek the remaining center cards once during their window.
   useEffect(() => {
@@ -185,8 +188,8 @@ export function NightPhase({
     }
     if (spokenKeyRef.current === segment.key) return;
     spokenKeyRef.current = segment.key;
-    speak(segment.narration);
-  }, [segment, soundOn, hasAudioFile, paused, needsGesture]);
+    speak(segmentCopy?.narration ?? "", theme.narration.ttsLocale);
+  }, [segment, segmentCopy, soundOn, hasAudioFile, paused, needsGesture, theme.narration.ttsLocale]);
 
   // When the night ends, ask the server to advance (idempotent).
   useEffect(() => {
@@ -230,7 +233,7 @@ export function NightPhase({
 
   // Which role's action UI should be shown right now?
   const activeActionRole: Role | null =
-    segment && segment.key === myRole && ROLES[myRole].hasAction && !game.hasActed
+    segment && segment.key === myRole && ROLE_RULES[myRole].hasAction && !game.hasActed
       ? myRole
       : segment?.key === "zumbi" && myRole === "zumbi" && chainRole
         ? chainRole
@@ -246,7 +249,7 @@ export function NightPhase({
     game.yourInfo.some((i) => i.kind === "viu_jogador");
 
   const progress = Math.min(1, elapsed / NIGHT_TOTAL_SECONDS);
-  const caption = displayCaption(subtitle, segment?.narration);
+  const caption = displayCaption(subtitle, segmentCopy?.narration);
 
   return (
     <AppShell className="gap-4">
@@ -264,12 +267,13 @@ export function NightPhase({
             {caption}
           </p>
         </div>
-        {segment?.actorPrompt &&
+        {segment &&
+          segmentCopy?.actorPrompt &&
           segment.key === myRole &&
-          ROLES[myRole].hasAction &&
+          ROLE_RULES[myRole].hasAction &&
           !game.hasActed &&
           !paused && (
-            <p className="mt-2 text-sm text-ember">{segment.actorPrompt}</p>
+            <p className="mt-2 text-sm text-ember">{segmentCopy.actorPrompt}</p>
           )}
       </header>
 
@@ -325,7 +329,7 @@ export function NightPhase({
         !paused && (
           <section className="panel-pixel rounded-lg p-4">
             <p className="mb-3 text-center text-parchment-dim">
-              Cemitério (só o verso — espaço vazio = carta escondida)
+              {theme.terminology.center} (só o verso — espaço vazio = carta escondida)
             </p>
             <GraveyardRow slots={game.centerSlots} size="sm" />
           </section>
@@ -337,14 +341,14 @@ export function NightPhase({
         highlight={
           !!segment &&
           segment.key === myRole &&
-          !ROLES[myRole].hasAction &&
+          !ROLE_RULES[myRole].hasAction &&
           game.yourInfo.length === 0
         }
       />
 
-      {!ROLES[myRole].hasAction && myRole !== "lobisomem" && (
+      {!ROLE_RULES[myRole].hasAction && myRole !== "lobisomem" && (
           <p className="panel-pixel rounded-lg p-3 text-center text-sm text-parchment-dim">
-            Olhos fechados — o cemitério só aparece quando o seu papel acorda.
+            Olhos fechados — {theme.terminology.center} só aparece quando o seu papel acorda.
           </p>
         )}
 
@@ -357,6 +361,7 @@ export function NightPhase({
 
 /** Full-size peek result — only while the witch's night window is still open. */
 function BruxaReveal({ view }: { view: RoomView }) {
+  const theme = useTheme();
   const seen = view.game!.yourInfo.find((i) => i.kind === "viu_jogador");
   if (!seen || seen.kind !== "viu_jogador") return null;
   const name =
@@ -367,7 +372,7 @@ function BruxaReveal({ view }: { view: RoomView }) {
       <RoleCard role={seen.role} size="md" flip />
       <p className="text-center text-parchment">
         {name} é{" "}
-        <span className="text-ember">{ROLES[seen.role].name}</span>
+        <span className="text-ember">{theme.roles[seen.role].name}</span>
       </p>
       <p className="text-center text-sm text-parchment-dim">
         Memorize agora — a carta some quando sua vez acabar.
@@ -387,6 +392,7 @@ export function NightInfo({
   /** Skip bruxa peeks (shown separately during her window / at results). */
   hideWitchPeek?: boolean;
 }) {
+  const theme = useTheme();
   const game = view.game!;
   const infos = hideWitchPeek
     ? game.yourInfo.filter((i) => i.kind !== "viu_jogador")
@@ -395,7 +401,7 @@ export function NightInfo({
     if (!highlight) return null;
     return (
       <p className="panel-pixel rounded-lg p-4 text-center text-parchment-dim">
-        {ROLES[game.yourRole].nightHint}
+        {theme.roles[game.yourRole].nightHint}
       </p>
     );
   }
@@ -410,10 +416,11 @@ export function NightInfo({
 }
 
 function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
+  const theme = useTheme();
   const nameOf = (id: string) =>
     view.players.find((p) => p.id === id)?.nickname ?? "???";
   const slotName = (index: number) =>
-    (["esquerda", "meio", "direita"] as const)[index] ?? "do cemitério";
+    theme.terminology.centerPositionNames[index] ?? theme.terminology.center;
 
   switch (info.kind) {
     case "lobisomens": {
@@ -422,23 +429,23 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
         <div>
           <p className="text-parchment">
             {others.length > 0
-              ? `Lobisomens: ${info.wolfIds.map(nameOf).join(", ")}`
-              : "Você é o único lobisomem."}
+              ? `${theme.teams.lobisomens.name}: ${info.wolfIds.map(nameOf).join(", ")}`
+              : `Você é o único ${theme.roles.lobisomem.name}.`}
           </p>
           {info.center && info.center.some((c) => c != null) ? (
             <>
               <p className="mb-2 text-parchment-dim">
-                Cemitério (só agora — memorize as posições!):
+                {theme.terminology.center} (só agora — memorize as posições!):
               </p>
               <RevealedGraveyardRow slots={info.center} size="sm" />
             </>
           ) : info.center && info.center.length > 0 ? (
             <p className="text-sm text-parchment-dim">
-              O cemitério está vazio.
+              {theme.terminology.center} está vazio.
             </p>
           ) : (
             <p className="text-sm text-parchment-dim">
-              As cartas do centro só aparecem no turno do lobisomem. Memorize
+              As cartas só aparecem no turno de {theme.roles.lobisomem.name}. Memorize
               quando virá-las.
             </p>
           )}
@@ -451,7 +458,7 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
           <RoleCard role={info.role} size="sm" flip />
           <p className="text-parchment">
             {nameOf(info.playerId)} é{" "}
-            <span className="text-ember">{ROLES[info.role].name}</span>
+            <span className="text-ember">{theme.roles[info.role].name}</span>
           </p>
         </div>
       );
@@ -460,8 +467,8 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
         <div className="flex items-center gap-3">
           <RoleCard role={info.role} size="sm" flip />
           <p className="text-parchment">
-            Você pegou <span className="text-ember">{ROLES[info.role].name}</span>{" "}
-            da posição {slotName(info.index)} do cemitério. Agora esse é o seu
+            Você pegou <span className="text-ember">{theme.roles[info.role].name}</span>{" "}
+            da posição {slotName(info.index)} em {theme.terminology.center}. Agora esse é o seu
             papel!
           </p>
         </div>
@@ -469,7 +476,7 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
     case "escondeu_centro":
       return (
         <p className="text-parchment">
-          Você escondeu a carta da posição {slotName(info.index)} do cemitério
+          Você escondeu a carta da posição {slotName(info.index)} em {theme.terminology.center}
           sem olhar. Ela será revelada no fim da discussão!
         </p>
       );
@@ -481,9 +488,9 @@ function InfoLine({ info, view }: { info: PrivateInfo; view: RoomView }) {
             Você trocou com{" "}
             {info.target.kind === "player"
               ? nameOf(info.target.playerId)
-              : "o centro"}{" "}
+              : theme.terminology.center}{" "}
             e agora é{" "}
-            <span className="text-ember">{ROLES[info.newRole].name}</span>. O
+            <span className="text-ember">{theme.roles[info.newRole].name}</span>. O
             alvo não sabe.
           </p>
         </div>
@@ -502,6 +509,7 @@ function ActionPanel({
   isChain: boolean;
   refresh: () => Promise<void>;
 }) {
+  const theme = useTheme();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -525,10 +533,10 @@ function ActionPanel({
     <section className="panel-pixel flex flex-col gap-3 rounded-lg border-ember p-4">
       <h2 className="font-title pulse-glow text-xs text-ember">
         {isChain
-          ? `AGORA VOCÊ É ${ROLES[actionRole].name.toUpperCase()}! AJA!`
+          ? `AGORA VOCÊ É ${theme.roles[actionRole].name.toUpperCase()}! AJA!`
           : "SUA VEZ DE AGIR!"}
       </h2>
-      <p className="text-parchment-dim">{ROLES[actionRole].nightHint}</p>
+      <p className="text-parchment-dim">{theme.roles[actionRole].nightHint}</p>
 
       {actionRole === "zumbi" && (
         <CenterPicker
@@ -549,7 +557,7 @@ function ActionPanel({
         <>
           <div>
             <p className="mb-2 text-center text-parchment-dim">
-              Cemitério (só o verso — espaço vazio = Caçador)
+              {theme.terminology.center} (só o verso — espaço vazio = {theme.roles.cacador.name})
             </p>
             <GraveyardRow slots={view.game!.centerSlots} size="sm" />
           </div>
@@ -670,6 +678,7 @@ function VampireTargetPicker({
   busy: boolean;
   onPick: (target: SwapTarget) => void;
 }) {
+  const theme = useTheme();
   const [selected, setSelected] = useState<SwapTarget | null>(null);
   const targets = view.players.filter((p) => p.id !== view.you.id);
   const seats = [...view.game!.centerSlots];
@@ -680,13 +689,13 @@ function VampireTargetPicker({
     selected?.kind === "player"
       ? targets.find((t) => t.id === selected.playerId)?.nickname
       : selected?.kind === "center"
-        ? (["esquerda", "meio", "direita"] as const)[selected.index]
+        ? theme.terminology.centerPositionNames[selected.index]
         : null;
 
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <p className="mb-2 text-center text-parchment-dim">Cemitério</p>
+        <p className="mb-2 text-center text-parchment-dim">{theme.terminology.center}</p>
         <div className="flex justify-center gap-3">
           {fixed.map((filled, i) =>
             filled ? (

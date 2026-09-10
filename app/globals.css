@@ -4,6 +4,7 @@
   /* Dark Halloween pixel palette */
   --color-night: #14092b;
   --color-night-soft: #221342;
+  --color-night-glow: #351b5e;
   --color-night-card: #2c1a52;
   --color-blood: #8f1d14;
   --color-blood-bright: #c92f1d;
@@ -34,7 +35,7 @@ body {
   font-size: 1.25rem;
   line-height: 1.25;
   background:
-    radial-gradient(ellipse at 50% -10%, #351b5e 0%, transparent 55%),
+    radial-gradient(ellipse at 50% -10%, var(--color-night-glow) 0%, transparent 55%),
     var(--color-night);
   min-height: 100dvh;
   overflow-x: hidden;

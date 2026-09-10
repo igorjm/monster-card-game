@@ -4,6 +4,7 @@
 create table public.rooms (
   id uuid primary key default gen_random_uuid(),
   code text unique not null,
+  theme_id text not null default 'monstros',
   phase text not null default 'lobby',
   host_id uuid not null,
   settings jsonb not null default '{"discussionSeconds": 300}'::jsonb,

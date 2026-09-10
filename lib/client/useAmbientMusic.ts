@@ -7,10 +7,10 @@ import { acquireAmbient, releaseAmbient } from "@/lib/client/ambientMusic";
  * Plays looping ambient music while `active` is true (home + lobby).
  * Uses a shared audio element so home → sala keeps the same playhead.
  */
-export function useAmbientMusic(active: boolean) {
+export function useAmbientMusic(active: boolean, src?: string, volume = 0.18) {
   useEffect(() => {
-    if (!active) return;
-    acquireAmbient();
+    if (!active || !src) return;
+    acquireAmbient(src, volume);
     return () => releaseAmbient();
-  }, [active]);
+  }, [active, src, volume]);
 }

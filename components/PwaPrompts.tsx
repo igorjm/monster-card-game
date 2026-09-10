@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { PixelModal } from "@/components/PixelModal";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import {
   type BeforeInstallPromptEvent,
   dismissInstall,
@@ -28,6 +29,7 @@ function subscribeNoop() {
  * iOS Safari: Apple provides no install API — only Share → Add to Home Screen.
  */
 export function PwaPrompts() {
+  const theme = useTheme();
   const ios = useSyncExternalStore(subscribeNoop, isIos, () => false);
   const [kind, setKind] = useState<PromptKind>(null);
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
@@ -152,14 +154,14 @@ export function PwaPrompts() {
       if (perm === "granted") {
         const reg = await navigator.serviceWorker?.ready.catch(() => null);
         if (reg) {
-          await reg.showNotification("Monstros", {
+          await reg.showNotification(theme.shortName, {
             body: "Notificações ligadas! Avisaremos quando fizer sentido na partida.",
             icon: "/icons/icon-192.png",
             badge: "/icons/icon-192.png",
-            tag: "monstros-welcome",
+            tag: "theme-game-welcome",
           });
         } else {
-          new Notification("Monstros", {
+          new Notification(theme.shortName, {
             body: "Notificações ligadas!",
             icon: "/icons/icon-192.png",
           });
@@ -191,17 +193,19 @@ export function PwaPrompts() {
     return (
       <PixelModal title="TELA INICIAL" onClose={skipInstall}>
         <div className="flex justify-center">
-          <img
-            src="/art/logo.png"
-            alt=""
-            className="pixel-art w-24"
-            draggable={false}
-          />
+          {theme.brand.logoSrc ? (
+            <img
+              src={theme.brand.logoSrc}
+              alt=""
+              className="pixel-art w-24"
+              draggable={false}
+            />
+          ) : null}
         </div>
         <p className="text-center text-parchment-dim leading-snug">
           {ios
             ? "No iPhone a Apple não deixa apps adicionarem sozinhas. Use o Safari:"
-            : "Um toque abre o instalador do Chrome e coloca o Monstros na tela inicial — como um app."}
+            : `Um toque abre o instalador do Chrome e coloca ${theme.shortName} na tela inicial — como um app.`}
         </p>
         {ios ? (
           <ol className="list-decimal space-y-2 pl-5 text-parchment-dim">

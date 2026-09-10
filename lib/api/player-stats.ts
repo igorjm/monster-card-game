@@ -1,5 +1,5 @@
 import { adminClient } from "@/lib/supabase/admin";
-import { ROLES } from "@/lib/game/roles";
+import { ROLE_RULES } from "@/lib/game/mechanics";
 import type { GameResult, PlayerInfo } from "@/lib/game/types";
 
 /**
@@ -13,7 +13,7 @@ export async function awardMatchWins(
   const winners = players.filter((p) => {
     const final = result.finalRoles[p.id];
     if (!final || final === "zumbi") return false;
-    return ROLES[final].team === result.winners;
+    return ROLE_RULES[final].team === result.winners;
   });
   if (winners.length === 0) return;
 

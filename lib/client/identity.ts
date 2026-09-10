@@ -1,20 +1,24 @@
 "use client";
 
-const TOKEN_KEY = "monstros:token";
-const NICK_KEY = "monstros:nickname";
+const TOKEN_KEY = "theme-game:token";
+const NICK_KEY = "theme-game:nickname";
+const LEGACY_TOKEN_KEY = "monstros:token";
+const LEGACY_NICK_KEY = "monstros:nickname";
 
 /** Stable private token identifying this device/player across rooms. */
 export function getPlayerToken(): string {
-  let token = localStorage.getItem(TOKEN_KEY);
+  let token = localStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(LEGACY_TOKEN_KEY);
   if (!token) {
     token = crypto.randomUUID();
-    localStorage.setItem(TOKEN_KEY, token);
   }
+  localStorage.setItem(TOKEN_KEY, token);
   return token;
 }
 
 export function getSavedNickname(): string {
-  return localStorage.getItem(NICK_KEY) ?? "";
+  const nickname = localStorage.getItem(NICK_KEY) ?? localStorage.getItem(LEGACY_NICK_KEY) ?? "";
+  if (nickname) localStorage.setItem(NICK_KEY, nickname);
+  return nickname;
 }
 
 export function saveNickname(nickname: string) {

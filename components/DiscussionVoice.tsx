@@ -22,6 +22,7 @@ import {
   shutdownLiveKitMedia,
 } from "@/lib/client/livekitMedia";
 import type { RoomView } from "@/lib/api/views";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 type VoiceStatus = "idle" | "connecting" | "connected" | "error" | "unavailable";
 
@@ -50,6 +51,7 @@ export function DiscussionVoice({
   /** Label only — must not remount / reconnect when it changes. */
   variant?: "lobby" | "talk";
 }) {
+  const theme = useTheme();
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(false);
@@ -461,7 +463,7 @@ export function DiscussionVoice({
     );
   }
 
-  const title = variant === "lobby" ? "VOZ" : "VOZ DA VILA";
+  const title = variant === "lobby" ? "VOZ" : `VOZ DA ${theme.terminology.village.toUpperCase()}`;
   const connecting = status === "connecting" || status === "idle";
 
   return (

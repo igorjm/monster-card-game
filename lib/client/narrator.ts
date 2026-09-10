@@ -1,53 +1,53 @@
 "use client";
 
-import {
-  NIGHT_AUDIO_SRC,
-  type SubtitleCue,
-} from "@/lib/game/timeline";
+import type { SubtitleCue } from "@/lib/game/timeline";
 
 /**
  * Night narration. Prefer `public/audio/monster.m4a`; fall back to pt-BR TTS
  * per timeline segment if the file is missing.
  */
 
-let audioAvailable: boolean | null = null;
+const audioAvailability = new Map<string, boolean>();
 
-export async function checkNightAudio(): Promise<boolean> {
-  if (audioAvailable !== null) return audioAvailable;
+export async function checkNightAudio(src?: string): Promise<boolean> {
+  if (!src) return false;
+  const cached = audioAvailability.get(src);
+  if (cached !== undefined) return cached;
   try {
-    const res = await fetch(NIGHT_AUDIO_SRC, { method: "HEAD" });
+    const res = await fetch(src, { method: "HEAD" });
     const type = res.headers.get("content-type") ?? "";
-    audioAvailable =
+    const available =
       res.ok && (type.includes("audio") || type.includes("octet-stream") || type === "");
+    audioAvailability.set(src, available);
+    return available;
   } catch {
-    audioAvailable = false;
+    audioAvailability.set(src, false);
+    return false;
   }
-  return audioAvailable;
-}
-
-export function nightAudioSrc(): string {
-  return NIGHT_AUDIO_SRC;
 }
 
 let voice: SpeechSynthesisVoice | null = null;
 
-function pickVoice(): SpeechSynthesisVoice | null {
-  if (voice) return voice;
+let voiceLocale = "";
+
+function pickVoice(locale: string): SpeechSynthesisVoice | null {
+  if (voice && voiceLocale === locale) return voice;
   const voices = window.speechSynthesis?.getVoices() ?? [];
   voice =
-    voices.find((v) => v.lang === "pt-BR") ??
-    voices.find((v) => v.lang.startsWith("pt")) ??
+    voices.find((v) => v.lang === locale) ??
+    voices.find((v) => v.lang.startsWith(locale.split("-")[0])) ??
     null;
+  voiceLocale = locale;
   return voice;
 }
 
-export function speak(text: string) {
+export function speak(text: string, locale = "pt-BR") {
   const synth = window.speechSynthesis;
   if (!synth) return;
   synth.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "pt-BR";
-  const v = pickVoice();
+  utterance.lang = locale;
+  const v = pickVoice(locale);
   if (v) utterance.voice = v;
   utterance.rate = 0.95;
   utterance.pitch = 0.8;
@@ -70,6 +70,6 @@ export function displayCaption(
 if (typeof window !== "undefined" && window.speechSynthesis) {
   window.speechSynthesis.onvoiceschanged = () => {
     voice = null;
-    pickVoice();
+    voiceLocale = "";
   };
 }

@@ -15,6 +15,7 @@ import {
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
 import { releaseLiveKitDevices } from "@/lib/client/livekitMedia";
 import type { RoomView } from "@/lib/api/views";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 type PackStatus = "connecting" | "connected" | "error" | "unavailable";
 
@@ -39,6 +40,7 @@ export function WolfPackVoice({
   /** Other wolf player ids (excluding self). Empty = solo, don't connect. */
   peerIds: string[];
 }) {
+  const theme = useTheme();
   const [status, setStatus] = useState<PackStatus>("connecting");
   const [error, setError] = useState<string | null>(null);
   const [micOn, setMicOn] = useState(true);
@@ -48,7 +50,10 @@ export function WolfPackVoice({
   const roomRef = useRef<Room | null>(null);
   const audioEls = useRef<Map<string, HTMLAudioElement>>(new Map());
   const pausedRef = useRef(paused);
-  pausedRef.current = paused;
+
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
 
   useEffect(() => {
     if (peerIds.length === 0) return;
@@ -226,7 +231,7 @@ export function WolfPackVoice({
         }
       } catch (e) {
         if (cancelled) return;
-        const msg = e instanceof Error ? e.message : "Erro na alcateia.";
+        const msg = e instanceof Error ? e.message : "Erro na chamada privada.";
         if (msg.includes("não configurada") || msg.includes("503")) {
           setStatus("unavailable");
         } else {
@@ -318,7 +323,7 @@ export function WolfPackVoice({
   if (status === "unavailable") {
     return (
       <section className="panel-pixel rounded-lg px-3 py-2 text-center text-sm text-parchment-dim">
-        Alcateia (voz) ainda não está ligada neste servidor.
+        {theme.terminology.wolfPack} (voz) ainda não está ligada neste servidor.
       </section>
     );
   }
@@ -327,7 +332,7 @@ export function WolfPackVoice({
     <section className="panel-pixel flex flex-col gap-2 rounded-lg border-ember p-3">
       <div className="flex items-center gap-2">
         <h2 className="font-title flex-1 text-[0.65rem] text-ember">
-          ALCATEIA
+          {theme.terminology.wolfPack.toUpperCase()}
         </h2>
         {status === "connecting" && (
           <span className="text-sm text-parchment-dim">Conectando…</span>

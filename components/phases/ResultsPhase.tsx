@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
-import { ROLES, TEAMS } from "@/lib/game/roles";
+import { ROLE_RULES } from "@/lib/game/mechanics";
 import type { RoomView } from "@/lib/api/views";
 import { RoleCard } from "@/components/RoleCard";
 import { AppShell } from "@/components/AppShell";
 import { NightInfo } from "./NightPhase";
 import { RevealedGraveyardRow } from "@/components/GraveyardRow";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 export function ResultsPhase({
   view,
@@ -16,6 +17,7 @@ export function ResultsPhase({
   view: RoomView;
   refresh: () => Promise<void>;
 }) {
+  const theme = useTheme();
   const result = view.game!.result!;
   const [busy, setBusy] = useState(false);
 
@@ -24,8 +26,8 @@ export function ResultsPhase({
 
   const yourFinal = result.finalRoles[view.you.id];
   const youWon =
-    yourFinal !== "zumbi" && ROLES[yourFinal].team === result.winners;
-  const team = TEAMS[result.winners];
+    yourFinal !== "zumbi" && ROLE_RULES[yourFinal].team === result.winners;
+  const team = theme.teams[result.winners];
 
   const voteTally: Record<string, number> = {};
   for (const target of Object.values(result.votes)) {
@@ -56,13 +58,14 @@ export function ResultsPhase({
           {team.name.toUpperCase()} VENCERAM
         </p>
         <p className="mt-1 text-parchment-dim">{team.goal}</p>
+        <p className="mt-1 text-sm text-parchment-dim">{team.winBlurb}</p>
       </header>
 
       {result.hunterHidden && (
         <section className="panel-pixel flex flex-col items-center gap-2 rounded-lg p-4">
-          <p className="font-title text-xs text-ember">CARTA DO CAÇADOR</p>
+          <p className="font-title text-xs text-ember">CARTA DE {theme.roles.cacador.name.toUpperCase()}</p>
           <RoleCard role={result.hunterHidden} size="md" flip />
-          <p className="text-parchment">{ROLES[result.hunterHidden].name}</p>
+          <p className="text-parchment">{theme.roles[result.hunterHidden].name}</p>
         </section>
       )}
 
@@ -107,10 +110,10 @@ export function ResultsPhase({
                 <span className="shrink-0 text-right">
                   {changed && (
                     <span className="text-parchment-dim line-through">
-                      {ROLES[original].name}
+                      {theme.roles[original].name}
                     </span>
                   )}{" "}
-                  <span className="text-ember">{ROLES[final].name}</span>
+                  <span className="text-ember">{theme.roles[final].name}</span>
                   <span className="block text-sm text-parchment-dim">
                     {result.votes[p.id]
                       ? `votou em ${nameOf(result.votes[p.id])}`
@@ -121,7 +124,7 @@ export function ResultsPhase({
             );
           })}
         </ul>
-        <p className="mb-2 mt-4 text-parchment-dim">Cemitério no fim da noite:</p>
+        <p className="mb-2 mt-4 text-parchment-dim">{theme.terminology.center} no fim da noite:</p>
         <RevealedGraveyardRow slots={result.center} size="sm" />
       </section>
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
 import type { RoomView } from "@/lib/api/views";
 import { AppShell } from "@/components/AppShell";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 export function VotingPhase({
   view,
@@ -12,6 +13,7 @@ export function VotingPhase({
   view: RoomView;
   refresh: () => Promise<void>;
 }) {
+  const theme = useTheme();
   const game = view.game!;
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -40,7 +42,7 @@ export function VotingPhase({
   return (
     <AppShell flushTop className="gap-5">
       <header className="text-center">
-        <h1 className="font-title text-sm text-blood-bright">HORA DA FORCA</h1>
+        <h1 className="font-title text-sm text-blood-bright">HORA DO VOTO</h1>
         <p className="mt-2 text-parchment-dim">
           {voted
             ? "Voto registrado. Aguardando os demais..."
@@ -50,7 +52,7 @@ export function VotingPhase({
           {game.votedCount}/{view.players.length} VOTARAM
         </p>
         <p className="mt-2 text-sm text-parchment-dim">
-          A carta do Caçador só é revelada no resultado.
+          A carta de {theme.roles.cacador.name} só é revelada no resultado.
         </p>
       </header>
 

@@ -16,6 +16,7 @@ import {
 import type { RoomView } from "@/lib/api/views";
 import { AppShell } from "@/components/AppShell";
 import { AmbientMusic } from "@/components/AmbientMusic";
+import { ThemePicker } from "@/components/theme/ThemePicker";
 import { useTheme } from "@/components/theme/ThemeProvider";
 
 export default function HomePage() {
@@ -23,6 +24,7 @@ export default function HomePage() {
   const router = useRouter();
   const { nickname, setNickname } = usePersistedNickname();
   const [code, setCode] = useState("");
+  const [selectedThemeId, setSelectedThemeId] = useState(theme.id);
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const nickRef = useRef<HTMLInputElement>(null);
@@ -47,6 +49,7 @@ export default function HomePage() {
       const view = await apiPost<RoomView>("/api/rooms", {
         nickname: nickname.trim(),
         token: getPlayerToken(),
+        themeId: selectedThemeId,
       });
       router.push(`/sala/${view.code}`);
       // Soft nav can stall after a hydration mismatch; unlock the CTA so
@@ -130,6 +133,17 @@ export default function HomePage() {
             }
           }}
         />
+
+        <div className="mt-4 border-t-2 border-night-card pt-4">
+          <ThemePicker
+            value={selectedThemeId}
+            disabled={busy !== null}
+            onChange={(themeId) => {
+              setSelectedThemeId(themeId);
+              setError(null);
+            }}
+          />
+        </div>
 
         <button
           type="button"

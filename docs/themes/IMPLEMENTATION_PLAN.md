@@ -1,7 +1,7 @@
 # Theme Packs: Product Bible and Implementation Plan
 
 Status: active on `codex/theme-packs`. The typed pack seam, Monstros extraction,
-room theme persistence/API, lobby picker, and two Brazilian preview packs are
+room theme persistence/API, creation picker, and two Brazilian preview packs are
 implemented on this branch. Final art/audio and production editorial approvals
 remain intentionally gated.
 
@@ -115,7 +115,7 @@ lib/ui/locales/
 
 components/theme/
   ThemeProvider.tsx         active pack and runtime CSS variables
-  ThemePicker.tsx           host-only lobby control
+  ThemePicker.tsx           room-creation control
 
 public/themes/<theme-id>/
   art/                      logo, card back, nine role images
@@ -239,12 +239,12 @@ Database:
 
 Room behavior:
 
-- New rooms use `DEFAULT_THEME_ID`, falling back safely to `monstros`.
-- Add `POST /api/rooms/[code]/theme` with `{ token, themeId }`.
-- Only the host may update it, only in `lobby`, and only to an enabled,
-  published ID.
-- Use the existing optimistic `updateRoom` path so a theme change increments the
-  room version and broadcasts to all players.
+- `POST /api/rooms` accepts `{ nickname, token, themeId }`; omitted values use
+  `DEFAULT_THEME_ID`, falling back safely to `monstros`.
+- Validate the requested theme against the enabled server registry before the
+  room is inserted.
+- The selected theme is immutable after room creation, so players always join
+  the same branded experience and no lobby mutation endpoint is exposed.
 - Restart preserves the selected theme. Leaving/deleting a room needs no theme
   cleanup.
 
@@ -341,14 +341,15 @@ Gate: a reviewed copy inventory and green baseline `test`, `lint`, and `build`.
 Gate: Monstros behavior, screenshots, timing, and text are equivalent; the game
 engine has zero imports from `lib/themes`.
 
-### Phase 2 — Persistence and lobby selection
+### Phase 2 — Persistence and creation selection
 
 - Apply the additive `theme_id` migration and update the Room/RoomView types.
-- Default old/new rooms to `monstros` and add the validated host-only theme API.
-- Add the lobby picker with pack preview, current selection, loading/error state,
-  and a clear “theme locks when the night starts” message.
-- Apply theme changes for every connected player after the Realtime-triggered
-  view refresh.
+- Default old rooms to `monstros` and validate the selected theme in the room
+  creation API.
+- Add the creation picker with pack preview, current selection, loading/error
+  state, and a clear “theme cannot change after creation” message.
+- Persist the theme in the initial room row so every connected player receives
+  the same pack on their first view.
 - Make the ambient singleton switch/fade tracks when the theme changes.
 - Key narration availability by audio URL instead of one global boolean; use the
   active pack locale for TTS fallback.

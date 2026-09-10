@@ -37,7 +37,9 @@ export function ThemePicker({
           );
         })}
       </div>
-      <p className="mt-2 text-sm text-parchment-dim">O tema fica bloqueado quando a noite começa.</p>
+      <p className="mt-2 text-sm text-parchment-dim">
+        Escolha o tema antes de criar a sala. Ele não poderá ser alterado depois.
+      </p>
     </fieldset>
   );
 }

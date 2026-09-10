@@ -4,17 +4,18 @@ import { ApiError, generateRoomCode, insertRoom } from "@/lib/api/room-store";
 import { errorResponse } from "@/lib/api/respond";
 import { buildViewResponse } from "@/lib/api/views";
 import type { PlayerInfo } from "@/lib/game/types";
-import { getDefaultThemeId } from "@/lib/themes/registry";
+import { resolveRoomCreationTheme } from "@/lib/api/room-creation";
 
 export const runtime = "nodejs";
 
-/** POST /api/rooms — create a room. Body: { nickname, token } */
+/** POST /api/rooms — create a room. Body: { nickname, token, themeId } */
 export async function POST(req: Request) {
   try {
-    const { nickname, token } = await req.json();
+    const { nickname, token, themeId } = await req.json();
     const name = String(nickname ?? "").trim().slice(0, 16);
     if (!name) throw new ApiError("Digite um apelido.");
     if (!token) throw new ApiError("Token ausente.");
+    const selectedThemeId = resolveRoomCreationTheme(themeId);
 
     const host: PlayerInfo = {
       id: randomUUID(),
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
       try {
         const room = await insertRoom({
           code: generateRoomCode(),
-          theme_id: getDefaultThemeId(),
+          theme_id: selectedThemeId,
           phase: "lobby",
           host_id: host.id,
           settings: { discussionSeconds: 300 },

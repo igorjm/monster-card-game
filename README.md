@@ -148,8 +148,8 @@ Use `npm run db:reset` para recriar somente o banco local pelas migrations e
 
 ## Packs de tema
 
-O anfitrião escolhe o tema no lobby; a escolha é sincronizada com toda a sala e
-fica bloqueada quando a noite começa. `monstros` é o pack publicado. `folclore-br`
+O anfitrião escolhe o tema antes de criar a sala; a escolha nasce sincronizada
+com toda a sala e não pode ser alterada depois. `monstros` é o pack publicado. `folclore-br`
 e `rio-satira` são prévias com copy, paleta, roteiro sincronizado e arte
 temporária gerada pela interface. As prévias aparecem automaticamente no
 desenvolvimento; em produção, exigem `NEXT_PUBLIC_ENABLE_PREVIEW_THEMES=1`.

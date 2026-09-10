@@ -12,7 +12,6 @@ import type { RoomView } from "@/lib/api/views";
 import { RoleCard } from "@/components/RoleCard";
 import { CardStrip } from "@/components/CardStrip";
 import { AppShell } from "@/components/AppShell";
-import { ThemePicker } from "@/components/theme/ThemePicker";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { formatThemeText } from "@/lib/themes/registry";
 
@@ -50,7 +49,6 @@ export function LobbyPhase({
   const [busy, setBusy] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [themeBusy, setThemeBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [inspected, setInspected] = useState<{
     role: Role;
@@ -113,23 +111,6 @@ export function LobbyPhase({
     });
     const href = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(href, "_blank", "noopener,noreferrer");
-  }
-
-  async function changeTheme(themeId: string) {
-    if (themeId === view.themeId) return;
-    setThemeBusy(true);
-    setError(null);
-    try {
-      await apiPost(`/api/rooms/${view.code}/theme`, {
-        token: getPlayerToken(),
-        themeId,
-      });
-      await refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro inesperado.");
-    } finally {
-      setThemeBusy(false);
-    }
   }
 
   return (
@@ -284,14 +265,6 @@ export function LobbyPhase({
       </section>
 
       {view.you.isHost ? (
-        <div className="flex flex-col gap-4">
-        <section className="panel-pixel rounded-lg p-4">
-          <ThemePicker
-            value={view.themeId}
-            disabled={themeBusy || busy || leaving}
-            onChange={(themeId) => void changeTheme(themeId)}
-          />
-        </section>
         <section className="panel-pixel rounded-lg p-4">
           <h2 className="font-title mb-3 text-xs text-parchment">
             TEMPO DE DISCUSSÃO
@@ -322,7 +295,6 @@ export function LobbyPhase({
             <p className="shake mt-3 text-center text-blood-bright">{error}</p>
           )}
         </section>
-        </div>
       ) : (
         <p className="text-center text-parchment-dim">
           Aguardando o anfitrião começar a partida...

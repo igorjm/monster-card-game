@@ -13,6 +13,50 @@ let gestureBound = false;
 /** While > 0, lobby bed stays silent so voice chat isn’t drowned out. */
 let voiceDucks = 0;
 
+const AMBIENT_SOUND_KEY = "theme-game:ambient-sound";
+const preferenceListeners = new Set<() => void>();
+let ambientSoundOverride: boolean | null = null;
+
+/** User preference for the home / lobby music. Defaults to on. */
+export function isAmbientSoundOn(): boolean {
+  if (typeof window === "undefined") return true;
+  if (ambientSoundOverride !== null) return ambientSoundOverride;
+  try {
+    return localStorage.getItem(AMBIENT_SOUND_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+export function subscribeToAmbientSound(listener: () => void) {
+  preferenceListeners.add(listener);
+
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== AMBIENT_SOUND_KEY) return;
+    ambientSoundOverride = event.newValue !== "0";
+    applyAmbientSoundPreference(ambientSoundOverride);
+    listener();
+  };
+  window.addEventListener("storage", onStorage);
+
+  return () => {
+    preferenceListeners.delete(listener);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+/** Apply a preference change immediately so a toggle click can unlock audio. */
+export function setAmbientSoundOn(on: boolean) {
+  ambientSoundOverride = on;
+  try {
+    localStorage.setItem(AMBIENT_SOUND_KEY, on ? "1" : "0");
+  } catch {
+    /* private mode */
+  }
+  applyAmbientSoundPreference(on);
+  for (const listener of preferenceListeners) listener();
+}
+
 function getAudio(): HTMLAudioElement {
   if (!audio) {
     audio = new Audio(AMBIENT_SRC);
@@ -35,7 +79,7 @@ function bindGestureUnlock() {
   gestureBound = true;
   const unlock = () => {
     unlocked = true;
-    if (holders > 0) void playNow();
+    if (holders > 0 && isAmbientSoundOn()) void playNow();
   };
   window.addEventListener("pointerdown", unlock, { once: true, passive: true });
   window.addEventListener("keydown", unlock, { once: true });
@@ -53,6 +97,15 @@ async function playNow() {
   }
 }
 
+function applyAmbientSoundPreference(on = isAmbientSoundOn()) {
+  clearFade();
+  if (!on) {
+    audio?.pause();
+    return;
+  }
+  if (holders > 0) void playNow();
+}
+
 /** Mute ambience while LiveKit voice is connected (lobby). */
 export function duckAmbientForVoice() {
   voiceDucks += 1;
@@ -61,7 +114,7 @@ export function duckAmbientForVoice() {
 
 export function unduckAmbientForVoice() {
   voiceDucks = Math.max(0, voiceDucks - 1);
-  if (voiceDucks === 0 && audio && holders > 0) {
+  if (voiceDucks === 0 && audio && holders > 0 && isAmbientSoundOn()) {
     audio.volume = AMBIENT_VOLUME;
     if (audio.paused) void playNow();
   }
@@ -95,8 +148,10 @@ export function acquireAmbient() {
   holders += 1;
   stopScheduled = false;
   if (typeof window === "undefined") return;
-  void playNow();
-  if (!unlocked) bindGestureUnlock();
+  if (isAmbientSoundOn()) {
+    void playNow();
+    if (!unlocked) bindGestureUnlock();
+  }
 }
 
 export function releaseAmbient() {

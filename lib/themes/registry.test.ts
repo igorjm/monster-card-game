@@ -17,7 +17,19 @@ describe("theme registry", () => {
       expect(validateThemePack(pack), pack.id).toEqual([]);
       expect(Object.keys(pack.roles)).toHaveLength(9);
       expect(Object.keys(pack.teams)).toHaveLength(4);
+      expect(pack.brand.logoSrc, `${pack.id} logo`).toMatch(/^\/.+\.png$/);
     }
+  });
+
+  it("gives every theme its own color identity", () => {
+    const packs = listThemePacks();
+
+    expect(new Set(packs.map((pack) => pack.palette.background)).size).toBe(
+      packs.length,
+    );
+    expect(new Set(packs.map((pack) => pack.palette.primary)).size).toBe(
+      packs.length,
+    );
   });
 
   it("falls back safely for unknown input", () => {

@@ -1,7 +1,7 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   apiPost,
@@ -17,14 +17,36 @@ import type { RoomView } from "@/lib/api/views";
 import { AppShell } from "@/components/AppShell";
 import { AmbientMusic } from "@/components/AmbientMusic";
 import { ThemePicker } from "@/components/theme/ThemePicker";
-import { useTheme } from "@/components/theme/ThemeProvider";
+import {
+  ThemeProvider,
+  useTheme,
+} from "@/components/theme/ThemeProvider";
 
 export default function HomePage() {
+  const defaultTheme = useTheme();
+  const [selectedThemeId, setSelectedThemeId] = useState(defaultTheme.id);
+
+  return (
+    <ThemeProvider themeId={selectedThemeId}>
+      <CreateRoomScreen
+        selectedThemeId={selectedThemeId}
+        onThemeChange={setSelectedThemeId}
+      />
+    </ThemeProvider>
+  );
+}
+
+function CreateRoomScreen({
+  selectedThemeId,
+  onThemeChange,
+}: {
+  selectedThemeId: string;
+  onThemeChange: (themeId: string) => void;
+}) {
   const theme = useTheme();
   const router = useRouter();
   const { nickname, setNickname } = usePersistedNickname();
   const [code, setCode] = useState("");
-  const [selectedThemeId, setSelectedThemeId] = useState(theme.id);
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const nickRef = useRef<HTMLInputElement>(null);
@@ -92,9 +114,12 @@ export default function HomePage() {
     <AppShell className="items-center justify-center gap-6 sm:gap-8">
       <AmbientMusic />
       {theme.brand.logoSrc ? (
-        <img
+        <Image
           src={theme.brand.logoSrc}
           alt={theme.brand.title}
+          width={256}
+          height={256}
+          fetchPriority="high"
           className="pixel-art float-slow w-48 sm:w-64 max-w-full"
           draggable={false}
         />
@@ -139,7 +164,7 @@ export default function HomePage() {
             value={selectedThemeId}
             disabled={busy !== null}
             onChange={(themeId) => {
-              setSelectedThemeId(themeId);
+              onThemeChange(themeId);
               setError(null);
             }}
           />

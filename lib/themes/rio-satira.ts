@@ -24,6 +24,7 @@ export const rioSatiraTheme: ThemePack = {
     name: "MADRUGADA",
     tagline: "Morro e asfalto · uma noite · versões demais",
     description: "Sátira de dedução social sobre poder, mídia e identidade política no Rio.",
+    logoSrc: "/themes/rio-satira/art/logo.png",
     cardBackSrc: "/themes/rio-satira/art/card-back.png",
     shareText: "Tem pasta circulando no Arquivo da Madrugada!\nSala {code}: {url}",
   },

@@ -20,15 +20,20 @@ const ThemeContext = createContext<ThemePack | null>(null);
 export function ThemeProvider({
   themeId,
   children,
+  syncDocument = true,
 }: {
   themeId: string;
   children: ReactNode;
+  /** Nested page providers own document-level colors and browser chrome. */
+  syncDocument?: boolean;
 }) {
   const resolved = resolveThemeId(themeId);
   const pack = useMemo(() => getThemePack(resolved), [resolved]);
   const cssProperties = useMemo(() => themeCssProperties(pack), [pack]);
 
   useEffect(() => {
+    if (!syncDocument) return;
+
     const root = document.documentElement;
     const previousTheme = root.dataset.theme;
     const previousValues = new Map<string, string>();
@@ -49,11 +54,14 @@ export function ThemeProvider({
       }
       if (themeMeta && previousMeta) themeMeta.content = previousMeta;
     };
-  }, [cssProperties, pack]);
+  }, [cssProperties, pack, syncDocument]);
 
   return (
     <ThemeContext.Provider value={pack}>
-      <div style={cssProperties} className="flex min-h-dvh w-full flex-1 flex-col">
+      <div
+        style={cssProperties}
+        className="theme-surface flex min-h-dvh w-full flex-1 flex-col"
+      >
         {children}
       </div>
     </ThemeContext.Provider>

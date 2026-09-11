@@ -24,6 +24,7 @@ export const folcloreBrTheme: ThemePack = {
     name: "FOLCLORE",
     tagline: "O mato escuta · o Cruzeiro guarda · todo causo esconde alguém",
     description: "Dedução social entre assombrações e guardiões do folclore brasileiro.",
+    logoSrc: "/themes/folclore-br/art/logo.png",
     shareText: "A mata chamou para Uma Noite no Folclore!\nSala {code}: {url}",
   },
   terminology: {
@@ -77,4 +78,3 @@ export const folcloreBrTheme: ThemePack = {
     positive: "#70bf62", danger: "#e44e3a",
   },
 };
-

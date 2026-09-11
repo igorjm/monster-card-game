@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { apiPost, getPlayerToken } from "@/lib/client/identity";
 import { leaveRoom } from "@/lib/client/leaveRoom";
@@ -116,6 +117,16 @@ export function LobbyPhase({
   return (
     <AppShell wide flushTop className="gap-5">
       <header className="text-center">
+        {theme.brand.logoSrc ? (
+          <Image
+            src={theme.brand.logoSrc}
+            alt={theme.brand.title}
+            width={128}
+            height={128}
+            className="pixel-art mx-auto mb-3 h-20 w-20 sm:h-24 sm:w-24"
+            draggable={false}
+          />
+        ) : null}
         <p className="text-parchment-dim">Código da sala</p>
         <div className="mt-2 flex items-stretch justify-center gap-2">
           <button

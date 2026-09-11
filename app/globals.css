@@ -49,6 +49,15 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Every nested theme provider paints its own full-page background. This keeps
+   room/create-screen previews correct even when the root layout has the
+   default Monstros theme. */
+.theme-surface {
+  background:
+    radial-gradient(ellipse at 50% -10%, var(--color-night-glow) 0%, transparent 55%),
+    var(--color-night);
+}
+
 /* Allow selecting copyable codes / errors when needed */
 input,
 textarea,

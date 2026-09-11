@@ -104,7 +104,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         className="min-h-dvh flex flex-col bg-night text-parchment font-body overflow-x-hidden"
         suppressHydrationWarning
       >
-        <ThemeProvider themeId={getDefaultThemeId()}>
+        <ThemeProvider themeId={getDefaultThemeId()} syncDocument={false}>
           {children}
           <ServiceWorkerRegister />
           <PwaPrompts />

@@ -4,6 +4,7 @@ import { errorResponse } from "@/lib/api/respond";
 import { buildViewResponse } from "@/lib/api/views";
 import { awardMatchWins } from "@/lib/api/player-stats";
 import { resolveVotes, shouldRestartDebate } from "@/lib/game/engine";
+import { awardHostProgress } from "@/lib/commercial/progression";
 
 export const runtime = "nodejs";
 
@@ -77,6 +78,7 @@ export async function POST(
       room.game.winsAwarded
     ) {
       await awardMatchWins(room.players, room.game.result);
+      await awardHostProgress(room);
     }
 
     const player = findPlayerByToken(room, token);

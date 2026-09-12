@@ -13,6 +13,13 @@ export function validateThemePack(pack: ThemePack): string[] {
   const errors: string[] = [];
   if (!SAFE_ID.test(pack.id)) errors.push("id must be a safe lowercase slug");
   if (pack.schemaVersion !== 1) errors.push("unsupported schemaVersion");
+  if (pack.rights.themeId !== pack.id) errors.push("rights themeId must match pack id");
+  if (pack.status === "published" && !pack.rights.publishable) {
+    errors.push("published themes require an approved publishable rights record");
+  }
+  if (pack.access === "premium" && !pack.productId && pack.rights.publishable) {
+    errors.push("publishable premium themes require a productId");
+  }
   if (!pack.name.trim() || !pack.shortName.trim()) errors.push("missing name");
 
   for (const role of ROLE_IDS) {

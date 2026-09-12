@@ -33,8 +33,8 @@ describe("theme registry", () => {
   });
 
   it("falls back safely for unknown input", () => {
-    expect(resolveThemeId("../../secret")).toBe("monstros");
-    expect(resolveThemeId(undefined)).toBe("monstros");
+    expect(resolveThemeId("../../secret")).toBe("vila-criaturas");
+    expect(resolveThemeId(undefined)).toBe("vila-criaturas");
   });
 
   it("keeps preview packs gated in production", () => {
@@ -42,15 +42,13 @@ describe("theme registry", () => {
     vi.stubEnv("NEXT_PUBLIC_ENABLE_PREVIEW_THEMES", "0");
     vi.stubEnv("NEXT_PUBLIC_DEFAULT_THEME_ID", "folclore-br");
 
-    expect(listSelectableThemePacks().map((pack) => pack.id)).toEqual(["monstros"]);
-    expect(getDefaultThemeId()).toBe("monstros");
+    expect(listSelectableThemePacks().map((pack) => pack.id)).toEqual(["vila-criaturas"]);
+    expect(getDefaultThemeId()).toBe("vila-criaturas");
 
     vi.stubEnv("NEXT_PUBLIC_ENABLE_PREVIEW_THEMES", "1");
     expect(listSelectableThemePacks().map((pack) => pack.id)).toEqual([
-      "monstros",
-      "folclore-br",
-      "rio-satira",
+      "vila-criaturas",
     ]);
-    expect(getDefaultThemeId()).toBe("folclore-br");
+    expect(getDefaultThemeId()).toBe("vila-criaturas");
   });
 });

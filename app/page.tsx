@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   apiPost,
   getPlayerToken,
@@ -17,6 +18,8 @@ import type { RoomView } from "@/lib/api/views";
 import { AppShell } from "@/components/AppShell";
 import { AmbientMusic } from "@/components/AmbientMusic";
 import { ThemePicker } from "@/components/theme/ThemePicker";
+import { HostAccountPanel } from "@/components/HostAccountPanel";
+import { trackFunnel } from "@/lib/client/analytics";
 import {
   ThemeProvider,
   useTheme,
@@ -49,13 +52,15 @@ function CreateRoomScreen({
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"create" | "join" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [adultHostReady, setAdultHostReady] = useState(false);
+  const onHostReady = useCallback((ready: boolean) => setAdultHostReady(ready), []);
   const nickRef = useRef<HTMLInputElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
 
   const normalizedCode = normalizeRoomCode(code);
   const hasNick = nickname.trim().length > 0;
   const codeReady = normalizedCode.length === ROOM_CODE_LENGTH;
-  const canCreate = hasNick && busy === null;
+  const canCreate = hasNick && adultHostReady && busy === null;
   const canJoin = hasNick && codeReady && busy === null;
 
   async function createRoom() {
@@ -73,6 +78,7 @@ function CreateRoomScreen({
         token: getPlayerToken(),
         themeId: selectedThemeId,
       });
+      trackFunnel("room_created", { theme: selectedThemeId });
       router.push(`/sala/${view.code}`);
       // Soft nav can stall after a hydration mismatch; unlock the CTA so
       // the user can retry or the page can finish navigating.
@@ -102,6 +108,7 @@ function CreateRoomScreen({
         `/api/rooms/${normalizedCode}/join`,
         { nickname: nickname.trim(), token: getPlayerToken() },
       );
+      trackFunnel("room_joined");
       router.push(`/sala/${view.code}`);
       setBusy(null);
     } catch (e) {
@@ -160,6 +167,10 @@ function CreateRoomScreen({
         />
 
         <div className="mt-4 border-t-2 border-night-card pt-4">
+          <HostAccountPanel onReady={onHostReady} />
+        </div>
+
+        <div className="mt-4 border-t-2 border-night-card pt-4">
           <ThemePicker
             value={selectedThemeId}
             disabled={busy !== null}
@@ -178,6 +189,9 @@ function CreateRoomScreen({
         >
           {busy === "create" ? "Criando..." : "Criar sala"}
         </button>
+        {!adultHostReady ? (
+          <p className="mt-2 text-center text-sm text-ember">Entre e confirme que é adulto para hospedar. Convidados continuam sem conta.</p>
+        ) : null}
 
         <div className="my-4 flex items-center gap-3 text-parchment-dim">
           <span className="h-[2px] flex-1 bg-night-card" />
@@ -234,6 +248,12 @@ function CreateRoomScreen({
       <p className="text-center text-parchment-dim">
         {theme.brand.tagline}
       </p>
+      <nav className="flex flex-wrap justify-center gap-3 text-sm text-parchment-dim">
+        <Link href="/seguranca">Segurança</Link>
+        <Link href="/privacidade">Privacidade</Link>
+        <Link href="/termos">Termos</Link>
+        <Link href="/conta">Conta</Link>
+      </nav>
     </AppShell>
   );
 }

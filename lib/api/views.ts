@@ -9,7 +9,8 @@ import type {
   Room,
   RoomSettings,
 } from "../game/types";
-import { resolveThemeId, type ThemeId } from "../themes/registry";
+import { getThemePack, resolveThemeId, type ThemeId } from "../themes/registry";
+import type { HostAccessSummary, RoomMediaPolicy } from "../commercial/types";
 
 export interface PublicPlayer {
   id: string;
@@ -18,6 +19,9 @@ export interface PublicPlayer {
   hasVoted: boolean;
   /** Career wins for this browser token (lobby ranking). */
   wins: number;
+  approval: "pending" | "approved";
+  microphoneBlocked: boolean;
+  cameraBlocked: boolean;
 }
 
 /** Everything a single client is allowed to know. */
@@ -32,7 +36,15 @@ export interface RoomView {
     id: string;
     nickname: string;
     isHost: boolean;
+    approved: boolean;
   };
+  access: {
+    adultHost: boolean;
+    adsAllowedForYou: boolean;
+    adsSuppressed: boolean;
+    premiumTheme: boolean;
+  };
+  mediaPolicy: RoomMediaPolicy;
   game: {
     nightStartedAt: string;
     nightTotalSeconds: number;
@@ -103,6 +115,12 @@ export function buildView(
   room: Room,
   player: PlayerInfo,
   winsByPlayerId: Record<string, number> = {},
+  hostAccess: HostAccessSummary = {
+    ageBand: "unknown",
+    adultHost: false,
+    adsSuppressed: true,
+    entitledProducts: [],
+  },
 ): RoomView {
   const game = room.game;
   const nightElapsed = game ? elapsedNightSeconds(game) : 0;
@@ -121,13 +139,31 @@ export function buildView(
       isHost: p.id === room.host_id,
       hasVoted: game ? p.id in game.votes : false,
       wins: winsByPlayerId[p.id] ?? 0,
+      approval: p.status ?? "approved",
+      microphoneBlocked: p.media?.microphoneBlocked ?? false,
+      cameraBlocked: p.media?.cameraBlocked ?? false,
     })),
     you: {
       id: player.id,
       nickname: player.nickname,
       isHost: player.id === room.host_id,
+      approved: player.status !== "pending",
     },
-    game: game
+    access: {
+      adultHost: hostAccess.adultHost,
+      adsAllowedForYou:
+        player.id === room.host_id && hostAccess.adultHost && !hostAccess.adsSuppressed,
+      adsSuppressed: hostAccess.adsSuppressed,
+      premiumTheme: getThemePack(room.theme_id).access === "premium",
+    },
+    mediaPolicy: room.media_policy ?? {
+      microphoneAllowed: true,
+      cameraAllowed: true,
+      cameraMaxHeight: 360,
+      cameraDisabledDuringNight: true,
+      recordingAllowed: false,
+    },
+    game: game && player.status !== "pending"
       ? {
           nightStartedAt: game.nightStartedAt,
           nightTotalSeconds: NIGHT_TOTAL_SECONDS,
@@ -161,6 +197,17 @@ export function buildView(
 /** Room view with career wins attached for lobby ranking. */
 export async function buildViewResponse(room: Room, player: PlayerInfo) {
   const { winsByPlayerId } = await import("./player-stats");
-  const wins = await winsByPlayerId(room.players);
-  return buildView(room, player, wins);
+  const { hostAccessSummary } = await import("../commercial/entitlements");
+  const [wins, access] = await Promise.all([
+    winsByPlayerId(room.players),
+    room.host_user_id
+      ? hostAccessSummary(room.host_user_id)
+      : Promise.resolve({
+          ageBand: "unknown",
+          adultHost: false,
+          adsSuppressed: true,
+          entitledProducts: [],
+        } as HostAccessSummary),
+  ]);
+  return buildView(room, player, wins, access);
 }

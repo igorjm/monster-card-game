@@ -1,17 +1,17 @@
 import { folcloreBrTheme } from "./folclore-br";
-import { monstrosTheme } from "./monstros";
+import { vilaCriaturasTheme } from "./monstros";
 import { rioSatiraTheme } from "./rio-satira";
 import type { ThemeCssProperties, ThemePack } from "./types";
 import { assertValidThemePack } from "./validate";
 
 export const THEME_PACKS = {
-  monstros: assertValidThemePack(monstrosTheme),
+  "vila-criaturas": assertValidThemePack(vilaCriaturasTheme),
   "folclore-br": assertValidThemePack(folcloreBrTheme),
   "rio-satira": assertValidThemePack(rioSatiraTheme),
 } as const satisfies Record<string, ThemePack>;
 
 export type ThemeId = keyof typeof THEME_PACKS;
-export const FALLBACK_THEME_ID: ThemeId = "monstros";
+export const FALLBACK_THEME_ID: ThemeId = "vila-criaturas";
 
 export function isThemeId(value: unknown): value is ThemeId {
   return typeof value === "string" && Object.hasOwn(THEME_PACKS, value);
@@ -48,7 +48,10 @@ export function arePreviewThemesEnabled(): boolean {
 export function isThemeSelectable(value: unknown): value is ThemeId {
   return (
     isThemeId(value) &&
-    (THEME_PACKS[value].status === "published" || arePreviewThemesEnabled())
+    THEME_PACKS[value].rights.status !== "blocked" &&
+    (THEME_PACKS[value].access === "starter" ||
+      THEME_PACKS[value].status === "published" ||
+      arePreviewThemesEnabled())
   );
 }
 

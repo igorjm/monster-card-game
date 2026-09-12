@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    { "pathPrefix": "public/art/", "status": "review-required", "use": "development-only", "owner": "Igor Melo" },
+    { "pathPrefix": "public/themes/", "status": "review-required", "use": "development-only", "owner": "Igor Melo" },
+    { "pathPrefix": "public/audio/", "status": "review-required", "use": "development-only", "owner": "Igor Melo" },
+    { "pathPrefix": "public/icons/", "status": "review-required", "use": "development-only", "owner": "Igor Melo" },
+    { "pathPrefix": "app/favicon.ico", "status": "review-required", "use": "development-only", "owner": "Igor Melo" }
+  ]
+}

@@ -5,6 +5,7 @@ import {
   Room,
   RoomEvent,
   Track,
+  VideoPresets,
   type LocalTrackPublication,
   type Participant,
   type RemoteParticipant,
@@ -35,7 +36,7 @@ type ParticipantTile = {
 
 /**
  * LiveKit A/V for talk phases (lobby, discussion, voting, results).
- * Mic on by default; camera opt-in. Stays connected through night in a
+ * Microphone and camera are explicit opt-ins. Stays connected through night in a
  * dormant (muted) state so the browser does not re-prompt for devices.
  */
 export function DiscussionVoice({
@@ -53,7 +54,8 @@ export function DiscussionVoice({
 }) {
   const theme = useTheme();
   const [status, setStatus] = useState<VoiceStatus>("idle");
-  const [micOn, setMicOn] = useState(true);
+  const [joinRequested, setJoinRequested] = useState(false);
+  const [micOn, setMicOn] = useState(false);
   const [camOn, setCamOn] = useState(false);
   const [needsMicGesture, setNeedsMicGesture] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,11 +64,12 @@ export function DiscussionVoice({
   const roomRef = useRef<Room | null>(null);
   const audioEls = useRef<Map<string, HTMLAudioElement>>(new Map());
   /** User preference — stays true unless they mute. Pause/dormant do not clear it. */
-  const wantMicRef = useRef(true);
+  const wantMicRef = useRef(false);
   const wantCamRef = useRef(false);
   const wasDormantRef = useRef(dormant);
 
   useEffect(() => {
+    if (!joinRequested) return;
     let cancelled = false;
     const room = new Room({
       adaptiveStream: true,
@@ -79,7 +82,9 @@ export function DiscussionVoice({
       publishDefaults: {
         // Keep the mic device open when muted so dawn restore doesn't re-prompt.
         stopMicTrackOnMute: false,
+        videoEncoding: VideoPresets.h360.encoding,
       },
+      videoCaptureDefaults: VideoPresets.h360.resolution,
     });
     roomRef.current = room;
     registerLiveKitRoom(room);
@@ -243,27 +248,9 @@ export function DiscussionVoice({
         await room.localParticipant.setCameraEnabled(false).catch(() => {});
         setCamOn(false);
 
-        if (wasDormantRef.current) {
-          // Joined during night (or reconnect): stay muted; prefs apply at dawn.
-          await room.localParticipant.setMicrophoneEnabled(false).catch(() => {});
-          setMicOn(false);
-        } else {
-          // Mic on by default; browsers may require a tap for permission.
-          try {
-            await room.localParticipant.setMicrophoneEnabled(true);
-            if (cancelled) return;
-            wantMicRef.current = true;
-            setMicOn(true);
-            setNeedsMicGesture(false);
-          } catch {
-            await room.localParticipant
-              .setMicrophoneEnabled(false)
-              .catch(() => {});
-            if (cancelled) return;
-            setMicOn(false);
-            setNeedsMicGesture(true);
-          }
-        }
+        await room.localParticipant.setMicrophoneEnabled(false).catch(() => {});
+        wantMicRef.current = false;
+        setMicOn(false);
 
         setStatus("connected");
         refreshSpeakers();
@@ -294,7 +281,7 @@ export function DiscussionVoice({
     };
     // Reconnect only when the game room changes — stay joined across
     // lobby → night (dormant) → discussion → voting → results.
-  }, [view.code]);
+  }, [view.code, joinRequested]);
 
   // Night dormancy: mute local + remote without disconnecting (keeps permissions).
   useEffect(() => {
@@ -404,6 +391,20 @@ export function DiscussionVoice({
     }
   }, [paused, micOn, camOn, status, needsMicGesture, dormant]);
 
+  const selfMedia = view.players.find((player) => player.id === view.you.id);
+  useEffect(() => {
+    const room = roomRef.current;
+    if (!room || status !== "connected") return;
+    if (selfMedia?.microphoneBlocked || !view.mediaPolicy.microphoneAllowed) {
+      wantMicRef.current = false;
+      void room.localParticipant.setMicrophoneEnabled(false).then(() => setMicOn(false)).catch(() => {});
+    }
+    if (selfMedia?.cameraBlocked || !view.mediaPolicy.cameraAllowed) {
+      wantCamRef.current = false;
+      void room.localParticipant.setCameraEnabled(false).then(() => setCamOn(false)).catch(() => {});
+    }
+  }, [selfMedia?.cameraBlocked, selfMedia?.microphoneBlocked, status, view.mediaPolicy.cameraAllowed, view.mediaPolicy.microphoneAllowed]);
+
   async function setMic(next: boolean) {
     const room = roomRef.current;
     if (!room || status !== "connected" || paused || dormant) return;
@@ -425,7 +426,8 @@ export function DiscussionVoice({
 
   async function setCam(next: boolean) {
     const room = roomRef.current;
-    if (!room || status !== "connected" || paused || dormant) return;
+    const self = view.players.find((player) => player.id === view.you.id);
+    if (!room || status !== "connected" || paused || dormant || !view.mediaPolicy.cameraAllowed || self?.cameraBlocked) return;
     try {
       await room.localParticipant.setCameraEnabled(next);
       wantCamRef.current = next;
@@ -453,6 +455,17 @@ export function DiscussionVoice({
 
   if (dormant) {
     return null;
+  }
+
+  if (!joinRequested) {
+    return (
+      <section className="panel-pixel rounded-lg p-3 text-center">
+        <p className="text-sm text-parchment-dim">Voz e câmera são opcionais. Nada é gravado ou transcrito.</p>
+        <button type="button" className="btn-pixel btn-pixel--ghost mt-2 rounded-md" onClick={() => setJoinRequested(true)}>
+          Entrar na conversa
+        </button>
+      </section>
+    );
   }
 
   if (status === "unavailable") {
@@ -488,7 +501,7 @@ export function DiscussionVoice({
           ) : (
             <AvToggle
               active={micOn}
-              disabled={status !== "connected" || paused}
+              disabled={status !== "connected" || paused || selfMedia?.microphoneBlocked || !view.mediaPolicy.microphoneAllowed}
               label={micOn ? "Mic" : "Mudo"}
               ariaLabel={micOn ? "Mutar microfone" : "Ligar microfone"}
               onClick={() => setMic(!micOn)}
@@ -497,7 +510,7 @@ export function DiscussionVoice({
           )}
           <AvToggle
             active={camOn}
-            disabled={status !== "connected" || paused}
+            disabled={status !== "connected" || paused || selfMedia?.cameraBlocked || !view.mediaPolicy.cameraAllowed}
             label={camOn ? "Cam" : "Cam"}
             ariaLabel={camOn ? "Desligar câmera" : "Ligar câmera"}
             onClick={() => setCam(!camOn)}

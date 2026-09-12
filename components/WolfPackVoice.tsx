@@ -5,6 +5,7 @@ import {
   Room,
   RoomEvent,
   Track,
+  VideoPresets,
   type LocalTrackPublication,
   type Participant,
   type RemoteParticipant,
@@ -17,7 +18,7 @@ import { releaseLiveKitDevices } from "@/lib/client/livekitMedia";
 import type { RoomView } from "@/lib/api/views";
 import { useTheme } from "@/components/theme/ThemeProvider";
 
-type PackStatus = "connecting" | "connected" | "error" | "unavailable";
+type PackStatus = "idle" | "connecting" | "connected" | "error" | "unavailable";
 
 type PackTile = {
   identity: string;
@@ -41,10 +42,11 @@ export function WolfPackVoice({
   peerIds: string[];
 }) {
   const theme = useTheme();
-  const [status, setStatus] = useState<PackStatus>("connecting");
+  const [status, setStatus] = useState<PackStatus>("idle");
+  const [joinRequested, setJoinRequested] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [micOn, setMicOn] = useState(true);
-  const [camOn, setCamOn] = useState(true);
+  const [micOn, setMicOn] = useState(false);
+  const [camOn, setCamOn] = useState(false);
   const [tiles, setTiles] = useState<PackTile[]>([]);
   const [videoById, setVideoById] = useState<Record<string, Track>>({});
   const roomRef = useRef<Room | null>(null);
@@ -56,7 +58,7 @@ export function WolfPackVoice({
   }, [paused]);
 
   useEffect(() => {
-    if (peerIds.length === 0) return;
+    if (peerIds.length === 0 || !joinRequested) return;
 
     let cancelled = false;
     const room = new Room({
@@ -67,6 +69,8 @@ export function WolfPackVoice({
         noiseSuppression: true,
         autoGainControl: true,
       },
+      publishDefaults: { videoEncoding: VideoPresets.h360.encoding },
+      videoCaptureDefaults: VideoPresets.h360.resolution,
     });
     roomRef.current = room;
 
@@ -210,20 +214,10 @@ export function WolfPackVoice({
         await room.connect(creds.url, creds.token);
         if (cancelled) return;
 
-        // Pack defaults: mic + cam on so wolves can plan face-to-face.
-        const live = !pausedRef.current;
-        try {
-          await room.localParticipant.setMicrophoneEnabled(live);
-          setMicOn(live);
-        } catch {
-          setMicOn(false);
-        }
-        try {
-          await room.localParticipant.setCameraEnabled(live);
-          setCamOn(live);
-        } catch {
-          setCamOn(false);
-        }
+        await room.localParticipant.setMicrophoneEnabled(false).catch(() => {});
+        await room.localParticipant.setCameraEnabled(false).catch(() => {});
+        setMicOn(false);
+        setCamOn(false);
 
         if (!cancelled) {
           setStatus("connected");
@@ -267,7 +261,7 @@ export function WolfPackVoice({
     };
     // Connect once per pack session — pause handled separately.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view.code, peerIds.join("|")]);
+  }, [view.code, peerIds.join("|"), joinRequested]);
 
   // Host pause during night: mute pack A/V; restore both on resume.
   useEffect(() => {
@@ -279,13 +273,21 @@ export function WolfPackVoice({
       else void el.play().catch(() => {});
     }
     if (paused) {
-      void room.localParticipant.setMicrophoneEnabled(false).catch(() => {});
-      void room.localParticipant.setCameraEnabled(false).catch(() => {});
+      void room.localParticipant.setMicrophoneEnabled(false).then(() => setMicOn(false)).catch(() => {});
+      void room.localParticipant.setCameraEnabled(false).then(() => setCamOn(false)).catch(() => {});
       return;
     }
-    void room.localParticipant.setMicrophoneEnabled(true).then(() => setMicOn(true)).catch(() => setMicOn(false));
-    void room.localParticipant.setCameraEnabled(true).then(() => setCamOn(true)).catch(() => setCamOn(false));
+    // Resume keeps media off; the participant explicitly opts in again.
   }, [paused, status]);
+
+  const selfMedia = view.players.find((player) => player.id === view.you.id);
+  useEffect(() => {
+    const room = roomRef.current;
+    if (!room || status !== "connected") return;
+    if (selfMedia?.microphoneBlocked || !view.mediaPolicy.microphoneAllowed) {
+      void room.localParticipant.setMicrophoneEnabled(false).then(() => setMicOn(false)).catch(() => {});
+    }
+  }, [selfMedia?.microphoneBlocked, status, view.mediaPolicy.microphoneAllowed]);
 
   async function setMic(next: boolean) {
     const room = roomRef.current;
@@ -320,6 +322,17 @@ export function WolfPackVoice({
 
   if (peerIds.length === 0) return null;
 
+  if (!joinRequested) {
+    return (
+      <section className="panel-pixel rounded-lg border-ember p-3 text-center">
+        <p className="text-sm text-parchment-dim">Conversa privada opcional. Durante a noite, câmera permanece desativada.</p>
+        <button type="button" className="btn-pixel btn-pixel--ghost mt-2 rounded-md" onClick={() => setJoinRequested(true)}>
+          Entrar só com áudio desligado
+        </button>
+      </section>
+    );
+  }
+
   if (status === "unavailable") {
     return (
       <section className="panel-pixel rounded-lg px-3 py-2 text-center text-sm text-parchment-dim">
@@ -346,7 +359,7 @@ export function WolfPackVoice({
             className={`btn-pixel rounded-md px-2.5 py-1.5 text-[0.55rem] ${
               micOn ? "btn-pixel--ember" : "btn-pixel--ghost"
             }`}
-            disabled={status !== "connected" || paused}
+            disabled={status !== "connected" || paused || selfMedia?.microphoneBlocked || !view.mediaPolicy.microphoneAllowed}
             onClick={() => setMic(!micOn)}
           >
             {micOn ? "Mic" : "Mudo"}
@@ -356,10 +369,10 @@ export function WolfPackVoice({
             className={`btn-pixel rounded-md px-2.5 py-1.5 text-[0.55rem] ${
               camOn ? "btn-pixel--ember" : "btn-pixel--ghost"
             }`}
-            disabled={status !== "connected" || paused}
+            disabled
             onClick={() => setCam(!camOn)}
           >
-            Cam
+            Sem câmera à noite
           </button>
         </div>
       </div>

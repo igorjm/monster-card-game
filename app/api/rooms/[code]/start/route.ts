@@ -24,10 +24,8 @@ export async function POST(
       if (current.phase !== "lobby") {
         throw new ApiError("A partida já começou.");
       }
-      if (
-        current.players.length < MIN_PLAYERS ||
-        current.players.length > MAX_PLAYERS
-      ) {
+      const approvedPlayers = current.players.filter((candidate) => candidate.status !== "pending");
+      if (approvedPlayers.length < MIN_PLAYERS || approvedPlayers.length > MAX_PLAYERS) {
         throw new ApiError(
           `A partida precisa de ${MIN_PLAYERS} a ${MAX_PLAYERS} jogadores.`,
         );
@@ -36,7 +34,8 @@ export async function POST(
       return {
         phase: "noite" as const,
         settings: { discussionSeconds: seconds },
-        game: dealGame(current.players, seconds),
+        players: approvedPlayers,
+        game: dealGame(approvedPlayers, seconds),
       };
     });
 

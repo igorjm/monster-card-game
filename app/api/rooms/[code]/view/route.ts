@@ -24,7 +24,7 @@ export async function GET(
     if (!token) throw new ApiError("Token ausente.");
 
     let room = await loadRoom(code);
-    findPlayerByToken(room, token);
+    findPlayerByToken(room, token, true);
 
     if (room.phase === "lobby") {
       const probe = touchLobbyPresence(room, token);
@@ -36,7 +36,7 @@ export async function GET(
       if (Object.keys(probe).length > 0) {
         room = await updateRoom(code, (current) => {
           if (current.phase !== "lobby") return {};
-          findPlayerByToken(current, token);
+          findPlayerByToken(current, token, true);
           const patch = touchLobbyPresence(current, token);
           // Empty lobby after prune is extremely unlikely while caller is active;
           // treat as no-op and let the next poll 404.
@@ -45,7 +45,7 @@ export async function GET(
       }
     }
 
-    const player = findPlayerByToken(room, token);
+    const player = findPlayerByToken(room, token, true);
     return NextResponse.json(await buildViewResponse(room, player));
   } catch (e) {
     return errorResponse(e);

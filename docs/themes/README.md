@@ -1,14 +1,13 @@
 # Theme bible
 
-All packs share the mechanics documented in
-[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md). The role IDs in these files
-are stable engine keys; the names are presentation.
+All packs share the mechanics in `lib/game`. The role IDs in these files are
+stable engine keys; names and prose are presentation only.
 
 ## Implemented packs
 
-- [Monstros](./packs/monstros.md) — published baseline
-- [Folclore BR](./packs/folclore-br.md) — preview copy, script, palette, placeholder art
-- [Rio Sátira](./packs/rio-satira.md) — preview copy, script, palette, and complete draft card art
+- [Vila das Criaturas](./packs/vila-criaturas.md) — internal starter pending rights review
+- Folclore BR — blocked pending cultural/editorial review
+- Rio Sátira — blocked pending political/editorial review
 
 ## Content backlog
 
@@ -21,6 +20,6 @@ are stable engine keys; the names are presentation.
 - [Suburbia HOA](./packs/suburbia-hoa.md)
 - [Paris Café](./packs/paris-cafe.md)
 
-Every preview needs original final art, narration audio, captions, licensing
-records, accessibility review, and the named cultural/editorial approval before
-it becomes published.
+Every candidate needs original final art, narration, captions, licensing
+records, accessibility review and any named specialist approval before it can
+become published. See [the commercial catalog](./COMMERCIAL_CATALOG.md).

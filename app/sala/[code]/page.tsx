@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useRoomView } from "@/lib/client/useRoomView";
 import { useLobbyLeave } from "@/lib/client/useLobbyLeave";
@@ -16,6 +17,9 @@ import { AppShell } from "@/components/AppShell";
 import { AmbientMusic } from "@/components/AmbientMusic";
 import { DiscussionVoice } from "@/components/DiscussionVoice";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { SafetyReport } from "@/components/SafetyReport";
+import { trackFunnel } from "@/lib/client/analytics";
+import { HostModerationPanel } from "@/components/HostModerationPanel";
 
 export default function RoomPage({
   params,
@@ -27,6 +31,16 @@ export default function RoomPage({
   useLobbyLeave(code, view);
 
   const beforeMatch = !view || view.phase === "lobby";
+
+  useEffect(() => {
+    if (view?.phase === "resultado" && view.game?.nightStartedAt) {
+      const key = `mesa-oculta:tracked:${view.game.nightStartedAt}`;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        trackFunnel("match_completed", { isHost: view.you.isHost });
+      }
+    }
+  }, [view?.game?.nightStartedAt, view?.phase, view?.you.isHost]);
 
   if (error) {
     return (
@@ -45,6 +59,18 @@ export default function RoomPage({
           Entrando na sala...
         </p>
       </AppShell>
+    );
+  }
+
+  if (!view.you.approved) {
+    return (
+      <ThemeProvider themeId={view.themeId}>
+        <AppShell className="items-center justify-center gap-4 text-center">
+          <h1 className="font-title text-sm text-ember">ENTRADA SOLICITADA</h1>
+          <p className="text-parchment">O anfitrião precisa aprovar você antes de mostrar a mesa.</p>
+          <p className="text-sm text-parchment-dim">Esta sala é privada e desaparece automaticamente.</p>
+        </AppShell>
+      </ThemeProvider>
     );
   }
 
@@ -101,6 +127,8 @@ export default function RoomPage({
         {view.phase === "resultado" && (
           <ResultsPhase view={view} refresh={refresh} />
         )}
+        <HostModerationPanel view={view} refresh={refresh} />
+        <SafetyReport view={view} />
       </div>
     </ThemeProvider>
   );

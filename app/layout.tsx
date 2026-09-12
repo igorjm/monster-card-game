@@ -21,7 +21,7 @@ const pixelBody = VT323({
 });
 
 const defaultTheme = getDefaultThemePack();
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://lobisomem-monstros.vercel.app";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
@@ -32,11 +32,12 @@ export const metadata: Metadata = {
   },
   description: defaultTheme.brand.description,
   keywords: [
-    "one night",
     "jogo",
     "multiplayer",
     "dedução",
     "jogo social",
+    "sala privada",
+    "família e amigos",
     defaultTheme.shortName.toLocaleLowerCase(defaultTheme.locale),
   ],
   authors: [{ name: "Igor Melo" }],

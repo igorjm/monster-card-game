@@ -1,44 +1,16 @@
 # Contribuindo
 
-Obrigado por contribuir com o **Monster Card Game**!
+Crie uma branch curta, mantenha o servidor autoritativo e adicione testes para regras, permissões ou pagamentos alterados.
 
-## Setup
+Antes de enviar uma mudança:
 
 ```bash
-npm install
-cp .env.example .env.local
-# Preencha as variáveis Supabase (veja o README)
-npm run dev
+npm test
+npm run lint
+npm run assets:rights
+npm run build
 ```
 
-Aplique o schema em [`supabase/schema.sql`](supabase/schema.sql) no seu projeto Supabase.
+Não adicione scans, fotografias, logotipos, personagens, falas, músicas, figurinos ou semelhanças de terceiros. Um pack só pode entrar no registro público com proveniência completa, direitos aprovados e liberação editorial. Mundos de gênero podem evocar uma comédia de estúdio, espionagem, cinema de criaturas ou ópera espacial, mas não uma obra identificável.
 
-## Scripts
-
-| Comando | Uso |
-| --- | --- |
-| `npm run dev` | Servidor local |
-| `npm test` | Testes do motor do jogo |
-| `npm run lint` | ESLint |
-| `npm run build` | Build de produção |
-
-## Boas práticas
-
-- Mantenha a lógica secreta das cartas no servidor (`app/api/**` + `lib/game/**`).
-- Não exponha `SUPABASE_SECRET_KEY` no cliente.
-- UI e textos em **pt-BR**.
-- Prefira mudanças pequenas e focadas; rode `npm test` e `npm run lint` antes do PR.
-- Arte nova: pixel art HD no estilo Halloween escuro, em `public/art/`.
-
-## Áudio da noite
-
-Arquivo oficial: `public/audio/monster.m4a`.
-Legendas e janelas de ação: [`lib/game/timeline.ts`](lib/game/timeline.ts).
-
-Ordem: Caçador → Bruxa → Lobisomem → Zumbi → Vampiro.
-
-## Aviso legal
-
-Este projeto é uma **recriação online inspirada** no jogo de tabuleiro
-*Lobisomem por Uma Noite: Monstros*. Não use scans/fotos das cartas oficiais no
-repositório — a arte em `public/art/` é original.
+Ativos novos precisam de entrada em `docs/legal/ASSET_PROVENANCE.json`. Segredos e chaves nunca entram no Git. Alterações de banco devem ser criadas com `supabase migration new` e preservar RLS; tabelas públicas permanecem sem políticas para clientes porque o acesso passa pelas rotas do servidor.

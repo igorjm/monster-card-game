@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { filterPrivateInfo } from "./views";
-import type { PrivateInfo } from "../game/types";
+import { buildView, filterPrivateInfo } from "./views";
+import type { PrivateInfo, Room } from "../game/types";
 
 const peek: PrivateInfo = {
   kind: "viu_jogador",
@@ -61,5 +61,32 @@ describe("filterPrivateInfo", () => {
     expect(filterPrivateInfo([wolf], "discussao")).toEqual([
       { kind: "lobisomens", wolfIds: ["p1", "p3"] },
     ]);
+  });
+});
+
+describe("commercial and approval view boundaries", () => {
+  const room: Room = {
+    id: "r", code: "VIEW", theme_id: "vila-criaturas", phase: "lobby", host_id: "host",
+    settings: { discussionSeconds: 300 }, game: null, version: 1,
+    players: [
+      { id: "host", token: "secret-host", nickname: "Host", joinedAt: "now", status: "approved" },
+      { id: "guest", token: "secret-guest", nickname: "Guest", joinedAt: "now", status: "pending" },
+    ],
+  };
+
+  it("shows only derived commerce flags and restricts ads to the adult host", () => {
+    const access = { ageBand: "adult" as const, adultHost: true, adsSuppressed: false, entitledProducts: [] };
+    const hostView = buildView(room, room.players[0], {}, access);
+    const guestView = buildView(room, room.players[1], {}, access);
+    expect(hostView.access.adsAllowedForYou).toBe(true);
+    expect(guestView.access.adsAllowedForYou).toBe(false);
+    expect(JSON.stringify(guestView)).not.toContain("externalTransactionId");
+    expect(JSON.stringify(guestView)).not.toContain("secret-host");
+  });
+
+  it("keeps pending guests outside private game state", () => {
+    const view = buildView(room, room.players[1]);
+    expect(view.you.approved).toBe(false);
+    expect(view.game).toBeNull();
   });
 });

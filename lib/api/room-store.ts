@@ -22,6 +22,10 @@ export async function loadRoom(code: string): Promise<Room> {
     .maybeSingle();
   if (error) throw new ApiError("Erro ao buscar a sala.", 500);
   if (!data) throw new ApiError("Sala não encontrada.", 404);
+  if (data.expires_at && new Date(data.expires_at).getTime() <= Date.now()) {
+    await adminClient().from("rooms").delete().eq("id", data.id);
+    throw new ApiError("Esta sala expirou.", 410);
+  }
   return data as Room;
 }
 
@@ -76,8 +80,11 @@ export async function updateRoom(
   throw new ApiError("A sala está ocupada, tente novamente.", 409);
 }
 
-export function findPlayerByToken(room: Room, token: string) {
+export function findPlayerByToken(room: Room, token: string, allowPending = false) {
   const player = room.players.find((p) => p.token === token);
   if (!player) throw new ApiError("Você não está nesta sala.", 403);
+  if (!allowPending && player.status === "pending") {
+    throw new ApiError("Aguarde a aprovação do anfitrião.", 403);
+  }
   return player;
 }

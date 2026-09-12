@@ -2,7 +2,7 @@
  * Caches the app shell + static art/audio for installability and faster loads.
  * Multiplayer APIs always go to the network.
  */
-const CACHE = "theme-packs-v1";
+const CACHE = "mesa-oculta-v2";
 const PRECACHE = [
   "/",
   "/offline",
@@ -20,7 +20,6 @@ const PRECACHE = [
   "/art/mumia.png",
   "/art/vampiro.png",
   "/art/zumbi.png",
-  "/audio/monster.m4a",
 ];
 
 self.addEventListener("install", (event) => {

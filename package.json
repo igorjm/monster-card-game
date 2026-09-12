@@ -1,11 +1,11 @@
 {
-  "name": "monster-card-game",
+  "name": "mesa-oculta-engine",
   "version": "0.1.0",
   "private": true,
   "engines": {
     "node": ">=22.0.0"
   },
-  "description": "Lobisomem por Uma Noite — Monstros: multiplayer online pt-BR",
+  "description": "Motor multiplayer privado de dedução social para grupos 13+",
   "repository": {
     "type": "git",
     "url": "https://github.com/igorjm/monster-card-game.git"
@@ -21,7 +21,9 @@
     "db:stop": "supabase stop --project-id monster",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "assets:rights": "node scripts/check-asset-rights.mjs",
+    "verify": "npm test && npm run lint && npm run assets:rights && npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.1",

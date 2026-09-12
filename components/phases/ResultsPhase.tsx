@@ -9,6 +9,8 @@ import { AppShell } from "@/components/AppShell";
 import { NightInfo } from "./NightPhase";
 import { RevealedGraveyardRow } from "@/components/GraveyardRow";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { PostMatchPromotion } from "@/components/PostMatchPromotion";
+import { trackFunnel } from "@/lib/client/analytics";
 
 export function ResultsPhase({
   view,
@@ -37,6 +39,7 @@ export function ResultsPhase({
   async function playAgain() {
     setBusy(true);
     try {
+      trackFunnel("rematch_clicked");
       await apiPost(`/api/rooms/${view.code}/restart`, {
         token: getPlayerToken(),
       });
@@ -127,6 +130,8 @@ export function ResultsPhase({
         <p className="mb-2 mt-4 text-parchment-dim">{theme.terminology.center} no fim da noite:</p>
         <RevealedGraveyardRow slots={result.center} size="sm" />
       </section>
+
+      <PostMatchPromotion view={view} />
 
       {view.you.isHost ? (
         <button

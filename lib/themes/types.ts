@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Role, Team } from "../game/types";
 import type { NarrationBeat, SubtitleCue } from "../game/timeline";
+import type { ProductId, ThemeRightsRecord } from "../commercial/types";
 
 export type ThemeStatus = "published" | "preview";
 export type SupportedLocale = "pt-BR" | "en";
@@ -42,6 +43,9 @@ export interface ThemePack {
   schemaVersion: 1;
   id: string;
   status: ThemeStatus;
+  access: "starter" | "premium";
+  productId?: ProductId;
+  rights: ThemeRightsRecord;
   name: string;
   shortName: string;
   locale: SupportedLocale;

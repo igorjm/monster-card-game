@@ -21,6 +21,9 @@ export async function POST(
 
     let joined: PlayerInfo | null = null;
     const room = await updateRoom(code, (current) => {
+      if ((current.blocked_tokens ?? []).includes(String(token))) {
+        throw new ApiError("Este dispositivo foi bloqueado nesta sala.", 403);
+      }
       const existing = current.players.find((p) => p.token === token);
       if (existing) {
         joined = existing;
@@ -38,8 +41,8 @@ export async function POST(
       if (current.phase !== "lobby") {
         throw new ApiError("A partida já começou nesta sala.");
       }
-      if (current.players.length >= MAX_PLAYERS) {
-        throw new ApiError("A sala está cheia (máximo 7 jogadores).");
+      if (current.players.length >= MAX_PLAYERS + 4) {
+        throw new ApiError("A fila de entrada está cheia.");
       }
       if (
         current.players.some(
@@ -54,6 +57,8 @@ export async function POST(
         nickname: name,
         joinedAt: new Date().toISOString(),
         lastSeenAt: new Date().toISOString(),
+        status: "pending",
+        media: { microphoneBlocked: false, cameraBlocked: false },
       };
       return { players: [...current.players, joined] };
     });

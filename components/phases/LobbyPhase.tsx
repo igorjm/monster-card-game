@@ -15,6 +15,7 @@ import { CardStrip } from "@/components/CardStrip";
 import { AppShell } from "@/components/AppShell";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { formatThemeText } from "@/lib/themes/registry";
+import { HostPlayerControls } from "@/components/HostPlayerControls";
 
 const DISCUSSION_OPTIONS = [
   { seconds: 300, label: "5 min" },
@@ -56,11 +57,12 @@ export function LobbyPhase({
     index: number;
   } | null>(null);
 
-  const enoughPlayers = view.players.length >= MIN_PLAYERS;
+  const approvedPlayers = view.players.filter((player) => player.approval === "approved");
+  const enoughPlayers = approvedPlayers.length >= MIN_PLAYERS;
   // Stable preview (mumia when 3–4 would randomize mumia/esqueleto).
   const previewRng = () => 0;
   const rolesInGame: Role[] = enoughPlayers
-    ? buildDeck(view.players.length, previewRng)
+    ? buildDeck(approvedPlayers.length, previewRng)
     : buildDeck(MIN_PLAYERS, previewRng);
 
   async function start() {
@@ -160,7 +162,7 @@ export function LobbyPhase({
 
       <section className="panel-pixel rounded-lg p-4">
         <h2 className="font-title mb-3 text-xs text-parchment">
-          JOGADORES ({view.players.length}/7)
+          PESSOAS APROVADAS ({approvedPlayers.length}/7)
         </h2>
         <ul className="flex flex-col gap-2">
           {[...view.players]
@@ -191,6 +193,8 @@ export function LobbyPhase({
                   ANFITRIÃO
                 </span>
               )}
+              {p.approval === "pending" ? <span className="text-sm text-ember">AGUARDA APROVAÇÃO</span> : null}
+              {view.you.isHost ? <HostPlayerControls view={view} player={p} refresh={refresh} /> : null}
             </li>
           ))}
         </ul>
@@ -267,7 +271,7 @@ export function LobbyPhase({
           )}
         </div>
         <p className="mt-4 text-sm leading-snug text-parchment-dim">
-          {view.players.length >= MIN_PLAYERS ? view.players.length : MIN_PLAYERS}{" "}
+          {approvedPlayers.length >= MIN_PLAYERS ? approvedPlayers.length : MIN_PLAYERS}{" "}
           jogadores + 3 cartas em {theme.terminology.center} · arraste para ver todas
         </p>
         <p className="mt-2 text-sm leading-snug text-parchment-dim">

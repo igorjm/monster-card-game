@@ -75,6 +75,13 @@ export async function POST(
       roomName,
       identity: player.id,
       name: player.nickname,
+      canMicrophone:
+        room.media_policy?.microphoneAllowed !== false &&
+        player.media?.microphoneBlocked !== true,
+      canCamera:
+        room.phase !== "noite" &&
+        room.media_policy?.cameraAllowed !== false &&
+        player.media?.cameraBlocked !== true,
     });
 
     return NextResponse.json({
@@ -82,6 +89,16 @@ export async function POST(
       token: jwt,
       roomName,
       channel,
+      media: {
+        microphoneAllowed:
+          room.media_policy?.microphoneAllowed !== false &&
+          player.media?.microphoneBlocked !== true,
+        cameraAllowed:
+          room.phase !== "noite" &&
+          room.media_policy?.cameraAllowed !== false &&
+          player.media?.cameraBlocked !== true,
+        maxVideoHeight: 360,
+      },
     });
   } catch (e) {
     return errorResponse(e);

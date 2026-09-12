@@ -34,7 +34,7 @@ export function buildNarrationSubtitles(lines: {
   ];
 }
 
-export const MONSTROS_PALETTE: ThemePalette = {
+export const STARTER_PALETTE: ThemePalette = {
   background: "#14092b",
   backgroundSoft: "#221342",
   backgroundGlow: "#351b5e",

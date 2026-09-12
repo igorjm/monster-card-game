@@ -22,6 +22,12 @@ export interface PlayerInfo {
   joinedAt: string;
   /** Last lobby presence ping (ISO). Used to drop closed tabs. */
   lastSeenAt?: string;
+  /** Invitation-only rooms require the adult host to approve each guest. */
+  status?: "pending" | "approved";
+  media?: {
+    microphoneBlocked: boolean;
+    cameraBlocked: boolean;
+  };
 }
 
 export type SwapTarget =
@@ -114,7 +120,12 @@ export interface Room {
   theme_id: string;
   phase: Phase;
   host_id: string;
+  /** Supabase auth user that may administer, buy for, and restore this room. */
+  host_user_id?: string | null;
   settings: RoomSettings;
+  media_policy?: RoomMediaPolicy;
+  blocked_tokens?: string[];
+  expires_at?: string;
   players: PlayerInfo[];
   game: GameState | null;
   version: number;
@@ -123,3 +134,4 @@ export interface Room {
 export const MIN_PLAYERS = 3;
 export const MAX_PLAYERS = 7;
 export const CENTER_CARDS = 3;
+import type { RoomMediaPolicy } from "../commercial/types";

@@ -59,7 +59,7 @@ describe("buildDeck", () => {
     }
   });
 
-  it("matches the official Monstros chart", () => {
+  it("matches the configured role distribution", () => {
     const count = (deck: Role[], role: Role) =>
       deck.filter((r) => r === role).length;
 
